@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>windows on souloss</title>
+    <link>https://souloss.github.io/tags/windows/</link>
+    <description>Recent content in windows on souloss</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+</copyright>
+    <lastBuildDate>Mon, 05 Sep 2022 20:47:20 +0800</lastBuildDate><atom:link href="https://souloss.github.io/tags/windows/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Wsl 最佳工作指南</title>
+      <link>https://souloss.github.io/posts/tools/wsl-best-work-guide/</link>
+      <pubDate>Mon, 05 Sep 2022 20:47:20 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/tools/wsl-best-work-guide/</guid>
+      <description>本文主要用于总结作者是怎么持续优化 WSL 使用体验的</description>
+    </item>
+    
+  </channel>
+</rss>

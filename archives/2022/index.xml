@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>2022 on souloss</title>
+    <link>https://souloss.github.io/archives/2022/</link>
+    <description>Recent content in 2022 on souloss</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+</copyright>
+    <lastBuildDate>Mon, 05 Sep 2022 20:47:20 +0800</lastBuildDate><atom:link href="https://souloss.github.io/archives/2022/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Wsl 最佳工作指南</title>
+      <link>https://souloss.github.io/posts/tools/wsl-best-work-guide/</link>
+      <pubDate>Mon, 05 Sep 2022 20:47:20 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/tools/wsl-best-work-guide/</guid>
+      <description>本文主要用于总结作者是怎么持续优化 WSL 使用体验的</description>
+    </item>
+    
+    <item>
+      <title>自顶向下学习 zap 日志库</title>
+      <link>https://souloss.github.io/posts/library/golang/top-down-learning-zap/</link>
+      <pubDate>Sun, 12 Jun 2022 20:47:20 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/library/golang/top-down-learning-zap/</guid>
+      <description>阅读 Go 语言经典日志库 zap，以自顶向下的方式学习它的代码设计与使用，并且提供常见场景下的使用方案</description>
+    </item>
+    
+  </channel>
+</rss>

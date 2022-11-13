@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Linux 服务器时间同步 // souloss</title>
+    <script async defer data-website-id="05bd36b1-e8ce-4209-be32-afe117e3ea0c" src="https://umima.witchc.io/umami.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    
+    
+    
+
+        <meta property="og:title" content="Linux 服务器时间同步" />
+    <meta property="og:description" content="" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:url" content="https://souloss.github.io/posts/language/linux-time-sync/" />
+    
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link href="https://souloss.github.io/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+    <link href="https://souloss.github.io/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="https://souloss.github.io/css/style.css">
+    
+
+    
+
+    <meta name="generator" content="Hugo 0.101.0" />
+</head>
+
+
+<body>
+<div id="container">
+    <header id="header">
+    <div id="header-outer" class="outer">
+        <div id="header-inner" class="inner">
+            <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+            <a id="logo" class="logo-text" href="https://souloss.github.io/">souloss</a>
+            <nav id="main-nav">
+                
+                <a class="main-nav-link" href="/">Home</a>
+                
+                <a class="main-nav-link" href="/archives/">Archives</a>
+                
+                <a class="main-nav-link" href="/tags/">Tags</a>
+                
+                <a class="main-nav-link" href="/categories/">Categories</a>
+                
+                <a class="main-nav-link" href="/index.xml">Rss</a>
+                
+                <a class="main-nav-link" href="/sitemap.xml">SiteMap</a>
+                
+            </nav>
+            <nav id="sub-nav">
+                <div id="search-form-wrap">
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>
+
+    <section id="main" class="outer">
+        <article class="article article-type-post" itemscope itemprop="blogPost">
+    <div class="article-inner">
+        
+        <header class="article-header">
+            <h1 class="article-title" itemprop="name">Linux 服务器时间同步</h1>
+        </header>
+        
+        <div class="article-meta">
+            <a href="/posts/language/linux-time-sync/" class="article-date">
+                <time datetime='2021-12-14T23:05:59.000&#43;08:00' itemprop="datePublished">2021-12-14</time>
+            </a>
+            
+            
+            <div class="post-categories">
+                <div class="article-category">
+                    
+                    
+                    <a class="article-category-link" href="https://souloss.github.io//categories/%E7%B3%BB%E7%BB%9F%E6%9C%8D%E5%8A%A1">系统服务</a>
+                    
+                </div>
+            </div>
+            
+            
+        </div>
+        <div class="article-entry" itemprop="articleBody">
+            <h2 id="linux-时间同步说明文档">Linux 时间同步说明文档</h2>
+<p>在 <code>CentOS 7</code> 之前我们常用 <code>ntp</code> 服务进行时间同步，在 <code>CentOS 7</code> 之后，<code>chrony</code> 常作为 <code>ntp</code> 的替代实现，这里会介绍如何分别使用 <code>ntp</code> 和 <code>chrony</code> 进行局域网时间同步。</p>
+<h3 id="ntp-时间同步">NTP 时间同步</h3>
+<h4 id="安装和基本配置">安装和基本配置</h4>
+<ol>
+<li>使用命令 <code>yum install ntp</code> 安装 <code>ntp</code> 服务</li>
+<li>修改系统时间为准确时间，并且执行 <code>hwclock  -w</code> 根据系统时间设置硬件时间</li>
+<li>在时间同步服务器 <code>/etc/ntp.conf</code> 中插入配置 <code>server 127.127.1.0</code> 与 <code>fudge 127.127.1.0 stratum 8</code> 用于当无外部源时与本地硬件时钟同步</li>
+<li>在时间同步客户端 <code>/etc/ntp.conf</code> 中修改配置添加时间同步服务器 (注释无效的时间同步server，并且插入有效的 <code>server [地址] iburst</code>)</li>
+<li>使用命令 <code>service ntpd start</code> 启动时间同步守护程序</li>
+</ol>
+<h4 id="常用维护命令">常用维护命令：</h4>
+<ul>
+<li>强制同步 <code>ntpdate [时间同步服务器地址]</code>，一般操作系统开机时用该命令进行强制同步，然后依赖 <code>ntpd</code> 的 <code>utp</code> 端口进行服务同步。</li>
+<li>查看同步状态：<code>ntpstat</code>，该命令可以查看是否已同步，以及同步策略(多久同步一次)。</li>
+<li>查看同步信息：<code>ntpq -p</code>，该命令可以查看远程服务器的信息摘要，这些信息包括 上次接受数据时间，轮询间隔，延迟，抖动等。</li>
+<li>无法同步时可以使用命令 <code>ntpdate -d 172.18.40.148</code> 进行调试，查看具体原因，常见原因有：
+<ul>
+<li>Server dropped: strata too high： strata 过大，需要调整服务器配置文件包含有效的同步源，如果没有有效的同步源则可以参考上述第三步配置中的与本地硬件时钟进行同步。</li>
+<li>Server dropped: no data：ntpd 服务和客户端的版本不对，或者是端口被防火墙屏蔽以及服务器配置文件中 <code>restrict</code> 定义是否允许客户端的访问。</li>
+</ul>
+</li>
+</ul>
+<h3 id="chrony-时间同步">chrony 时间同步</h3>
+<h4 id="安装和基本配置-1">安装和基本配置</h4>
+<ol>
+<li>使用命令 <code>yum install chrony</code> 安装 chrony 服务</li>
+<li>修改系统时间为准确时间，并且执行 <code>hwclock  -w</code> 根据系统时间设置硬件时间</li>
+<li>在时间同步服务器 <code>/etc/chrony.conf</code> 中配置 <code>local stratum 10</code> 表示启动本地参考模式，即使服务器没有同步别的时钟也可以作为源。打开 <code>allow</code> 配置项，可以使用 <code>CIRD</code> 的形式配置允许的网段，也可以留空表示允许所有网段。</li>
+<li>在时间同步客户端修改 <code>/etc/chrony.conf</code> 配置添加时间同步服务器 (插入行 server [地址] iburst)</li>
+<li>使用命令 <code>systemctl start chronyd</code> 启动 <code>chronyd</code> 时间同步守护程序</li>
+</ol>
+<h4 id="三种同步模式">三种同步模式</h4>
+<h5 id="server-模式">server 模式</h5>
+<p>客户端与服务器的关系严格地是分层的：客户端可以将其系统时间与服务器的系统时间同步，但是服务器的系统时间将永远不会受到客户端的系统时间的影响。</p>
+<h5 id="pool-模式">pool 模式</h5>
+<p>它用于指定NTP服务器池而不是单个NTP服务器。池名称应解析为可能随时间变化的多个地址， chronyd将反复尝试解析名称，直到它获得此数量的响应请求的源为止。默认值为4，最大值为16。</p>
+<h5 id="peer-模式">peer 模式</h5>
+<p>它指定与NTP对等体的对称关联，而不是与NTP服务器的客户端/服务器关联。单一对称关联允许对等方彼此既是服务器又是客户端。当对等方的NTP实现（例如ntpd）支持临时对称关联并且不需要使用该主机的地址进行配置时，这主要有用。</p>
+<h4 id="常用维护命令-1">常用维护命令：</h4>
+<ul>
+<li>强制同步系统时钟: chronyc -a makestep</li>
+<li>查看日志：journalctl -u chronyd</li>
+<li>查看同步源和同步状态：chronyc sources -v</li>
+</ul>
+<h4 id="常见问题排查">常见问题排查</h4>
+<p>时间同步失败时，可以从下面几个原因寻找解决方案：</p>
+<ol>
+<li>检查防火墙是否关闭，因为 ntp 服务器默认走的是 123 的 udp 端口，要保证该网络端口可达。</li>
+<li>检查时间同步服务器端是否有配置正确的 <code>allow</code>，该项配置可以配置为一个网段，也可以什么都不配(相当于 0.0.0.0 网段)。</li>
+<li>若内网的时间同步服务器作为时钟源，且无法同步外部的时间同步服务器，则需要配置 <code>local stratum 10</code> 项，该选项的作用为 启动本地参考模式，它使 chronyd 即使是 “非同步状态” 也能作为时钟源进行同步，<code>stratum 10</code> 则表示设置该模式的层次为 10 层，层次越小意味着时间越可靠，默认值为 10。</li>
+<li>检查服务器时区是否相同。通过 <code>timedatectl list-timezones</code> 可以查看支持的时区，通过 <code>timedatectl set-timezone &lt;zone&gt;</code> 可以设置时区，我们一般使用 <code>timedatectl set-timezone Asia/Shanghai</code>。</li>
+<li>通过 <code>chronyc</code> 工具检查配置以及状态是否正确。</li>
+</ol>
+<h4 id="参考文档">参考文档</h4>
+<p><a href="https://chrony.tuxfamily.org/doc/4.0/chrony.conf.html">chronyd 配置参考</a></p>
+
+        </div>
+
+        
+        
+        <div class="article-toc" style="display:none;">
+            <h3>Contents</h3>
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#linux-时间同步说明文档">Linux 时间同步说明文档</a>
+      <ul>
+        <li><a href="#ntp-时间同步">NTP 时间同步</a></li>
+        <li><a href="#chrony-时间同步">chrony 时间同步</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+        </div>
+        
+        
+
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+        <script>
+            (function() {
+                var $toc = $('#TableOfContents');
+                if ($toc.length > 0) {
+                    var $window = $(window);
+
+                    function onScroll(){
+                        var currentScroll = $window.scrollTop();
+                        var h = $('.article-entry h1, .article-entry h2, .article-entry h3, .article-entry h4, .article-entry h5, .article-entry h6');
+                        var id = "";
+                        h.each(function (i, e) {
+                            e = $(e);
+                            if (e.offset().top - 10 <= currentScroll) {
+                                id = e.attr('id');
+                            }
+                        });
+                        var active = $toc.find('a.active');
+                        if (active.length == 1 && active.eq(0).attr('href') == '#' + id) return true;
+
+                        active.each(function (i, e) {
+                            $(e).removeClass('active').siblings('ul').hide();
+                        });
+                        $toc.find('a[href="#' + id + '"]').parentsUntil('#TableOfContents').each(function (i, e) {
+                            $(e).children('a').addClass('active').siblings('ul').show();
+                        });
+                    }
+
+                    $window.on('scroll', onScroll);
+                    $(document).ready(function() {
+                        $toc.find('a').parent('li').find('ul').hide();
+                        onScroll();
+                        document.getElementsByClassName('article-toc')[0].style.display = '';
+                    });
+                }
+            })();
+        </script>
+        
+
+
+        
+        <footer class="article-footer">
+            <ul class="article-tag-list">
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8">服务器
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/linux">linux
+                    </a>
+                </li>
+                
+            </ul>
+        </footer>
+        
+    </div>
+    
+
+</article>
+<script src="https://giscus.app/client.js"
+            data-repo="souloss/souloss.github.io"
+            data-repo-id="R_kgDOH127aA"
+            data-category="Announcements"
+            data-category-id="DIC_kwDOH127aM4CQ5q7"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="1"
+            data-input-position="bottom"
+            data-lang="en"
+            data-loading="lazy"
+            data-theme="https://giscus.app/themes/custom_example.css"
+            crossorigin="anonymous"
+            async>
+    </script>
+        
+    </section>
+    <footer id="footer">
+    <div class="outer">
+        <div id="footer-info" class="inner">
+            &copy; 2022 souloss
+            <br />
+            Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with theme <a href="https://github.com/carsonip/hugo-theme-minos" target="_blank">Minos</a>
+        </div>
+    </div>
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/base16/tomorrow-night.min.css" integrity="sha512-RhpnNVOxLt8etr+FHZxS6rugyqr7XelU5OV9wt+Bem7Ua6HRGZOKP/bcuOqOhzEO9b7VrdjLxEz3Yc9FY6xR9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js" integrity="sha512-yUUc0qWm2rhM7X0EFe82LNnv2moqArj5nro/w1bi05A09hRVeIZbN6jlMoyu0+4I/Bu4Ck/85JQIU82T82M28w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    
+
+    
+
+    <script>
+        document.getElementById('main-nav-toggle').addEventListener('click', function () {
+            var header = document.getElementById('header');
+            if (header.classList.contains('mobile-on')) {
+                header.classList.remove('mobile-on');
+            } else {
+                header.classList.add('mobile-on');
+            }
+        });
+    </script>
+</footer>
+
+</div>
+</body>
+</html>

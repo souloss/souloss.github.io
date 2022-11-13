@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Shell Learn // souloss</title>
+    <script async defer data-website-id="05bd36b1-e8ce-4209-be32-afe117e3ea0c" src="https://umima.witchc.io/umami.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    
+    
+    
+
+        <meta property="og:title" content="Secure Shell Learn" />
+    <meta property="og:description" content="" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:url" content="https://souloss.github.io/posts/tools/ssh-learn/" />
+    
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link href="https://souloss.github.io/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+    <link href="https://souloss.github.io/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="https://souloss.github.io/css/style.css">
+    
+
+    
+
+    <meta name="generator" content="Hugo 0.101.0" />
+</head>
+
+
+<body>
+<div id="container">
+    <header id="header">
+    <div id="header-outer" class="outer">
+        <div id="header-inner" class="inner">
+            <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+            <a id="logo" class="logo-text" href="https://souloss.github.io/">souloss</a>
+            <nav id="main-nav">
+                
+                <a class="main-nav-link" href="/">Home</a>
+                
+                <a class="main-nav-link" href="/archives/">Archives</a>
+                
+                <a class="main-nav-link" href="/tags/">Tags</a>
+                
+                <a class="main-nav-link" href="/categories/">Categories</a>
+                
+                <a class="main-nav-link" href="/index.xml">Rss</a>
+                
+                <a class="main-nav-link" href="/sitemap.xml">SiteMap</a>
+                
+            </nav>
+            <nav id="sub-nav">
+                <div id="search-form-wrap">
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>
+
+    <section id="main" class="outer">
+        <article class="article article-type-post" itemscope itemprop="blogPost">
+    <div class="article-inner">
+        
+        <header class="article-header">
+            <h1 class="article-title" itemprop="name">Secure Shell Learn</h1>
+        </header>
+        
+        <div class="article-meta">
+            <a href="/posts/tools/ssh-learn/" class="article-date">
+                <time datetime='2021-12-04T20:47:20.000&#43;08:00' itemprop="datePublished">2021-12-04</time>
+            </a>
+            
+            
+            <div class="post-categories">
+                <div class="article-category">
+                    
+                    
+                    <a class="article-category-link" href="https://souloss.github.io//categories/tools">tools</a>
+                    
+                </div>
+            </div>
+            
+            
+        </div>
+        <div class="article-entry" itemprop="articleBody">
+            <h2 id="secure-shell-的历史与发展">Secure Shell 的历史与发展</h2>
+<p>20世纪80年代，也就是 TCP/IP 协议正式被采用和开始普及的时间点，此时互联网还未得到大范围的传播和普及，网络程序大多运行在一个可信的环境下，所以它们都是明文通信的。<a href="https://en.wikipedia.org/wiki/Berkeley_r-commands#cite_note-McKusick-2"><strong>Berkeley r-commands</strong></a> 正是第一批基于 TCP/IP 协议实现的软件，它能用于远程登录，远程执行命令以及传送文件等，r-commands 是一项重要的创新，这使得它成为了早期 Unix 操作系统上的标准软件。但随着互联网的高速发展和普及，r-commands 的缺陷逐渐显露，信息明文传输，对客户端缺少认证机制导致它逐渐退出历史舞台。</p>
+<p>1995 年，芬兰赫尔辛基理工大学的学生 Tatu Ylonen 在校园网络中发现了密码嗅探器，于是他编写了一套进行安全通信的程序，并称其为 <strong>Secure Shell</strong>。设计目标是取代先前的 rlogin、telnet、ftp、rsh 等安全性不足的协议。1995年7月，Tatu Ylonen 以免费软件的形式将其发布。程序很快流行起来，截至1995年底，SSH的用户数已经达到两万，遍布五十个国家。1995年12月，Tatu Ylonen 创立了<a href="https://www.ssh.com/">SSH通信安全公司</a>来继续开发和销售SSH。SSH的早期版本用到了很多自由软件，例如GNU libgmp，但后来由SSH公司发布的版本逐渐变成了专有软件。</p>
+<p>1999 年，开源社区的程序员希望 SSH 能提供免费的版本，于是他们基于原始 SSH 程序的 1.2.12 版本继续开发，这也是原始SSH的最后一个在开源许可下发布的版本。截止到 2005 年，<a href="https://en.wikipedia.org/wiki/OpenSSH">OpenSSH</a>成为了最流行的 SSH 实现，默认情况下出现在大量操作系统中。</p>
+<p>2006 年，SSH 协议的修订版 SSH-2 被采纳为标准。此版本与 SSH-1 不兼容。与 SSH-1 相比，SSH-2 具有安全性和功能改进。所以目前大多数实现都是仅支持 SSH-2 协议。</p>
+<h2 id="secure-shell-协议的基本认识">Secure Shell 协议的基本认识</h2>
+<p>Secure Shell(ssh) 是典型的 C/S 架构软件，在协议层面上，它们有三个主要组成部分：</p>
+<ul>
+<li>传输层：保证服务器身份验证的机密性和完整性，提供压缩功能。该层通常基于 TCP/IP 实现。</li>
+<li>用户认证层：运行在传输层之上，该层处理客户端身份验证并提供多种身份验证方法。比如 password、publickey、键盘交互、<a href="https://en.wikipedia.org/wiki/Generic_Security_Services_Application_Program_Interface">GSSAPI</a> 等。</li>
+<li>连接层：运行在用户认证层之上，该层定义了提供 SSH 服务的通道、通道请求和全局请求的概念。单个 SSH 连接可以同时托管多个通道，每个通道双向传输数据。通道请求用于中继带外通道特定数据，例如终端窗口大小的更改或服务器端进程的退出代码。此外，每个通道使用接收窗口大小执行自己的流量控制。SSH 客户端使用全局请求请求转发服务器端端口。标准通道类型包括 shell、direct-tcpip、forwarded-tcpip。</li>
+</ul>
+<p>这种开放式架构使得 SSH 协议不仅仅可以用于 Secure Shell，任何需要安全传输以及用户认证的信息通道都能基于它进行实现。</p>
+<p>SSH的报文交互主要有以下几个阶段：</p>
+<ul>
+<li>连接建立：SSH服务器端在22端口侦听客户端的连接请求，接收到客户端的连接建立请求后，与客户端进行三次握手，建立起一条TCP连接，后续的所有报文交互都在这个TCP连接之上进行。</li>
+<li>版本协商：TCP连接建立之后，服务器和客户端都会向对端发送自己支持的版本号。服务器端和客户端收到对端发送过来的版本后，与本端的版本号进行比较，双方都支持的最高版本号即为协商出的版本号。</li>
+<li>算法协商：由于各种客户端和服务器对这些算法的支持情况不一样，因此客户端与服务器需要都将自己支持的算法列表发送给对方，双方依次协商每一种算法（密钥交换算法、加密算法等），直到全部成功则算协商成功，否则协商失败。</li>
+<li>密钥交换：加密算法协商成功后，为了保证加解密密钥的安全性，SSH利用密钥交换算法在通信双方安全动态地生成和交互数据的加解密密钥，并能够有效防止第三方窃听加解密密钥。</li>
+<li>用户认证：SSH 支持多种认证方式，所以服务器会列出自己支持的认证方式，然后客户端从服务器发送给自己的认证方式列表中选择某种认证方式，向服务器发起认证请求，认证请求中包含用户名、认证方法、与该认证方法相关的内容，服务器收到客户端的认证请求，验证客户端的认证信息，验证成功则认证过程顺利完成，否则在达到最大认证次数之前重复之前的过程，直到失败为止。</li>
+<li>服务请求：SSH协议支持多种应用服务。用户成功完成认证后，SSH客户端向服务器端发起服务请求，请求服务器提供某种应用。首先客户端会发送 SSH_MSG_CHANNEL_OPEN 与服务器建立会话通道，建立完成后客户端便可以申请在通道上进行shell或subsystem类型的会话传输了。</li>
+<li>数据传输和连接关闭：服务请求成功，建立会话后，服务器和客户端可以在该会话上进行数据的传输。客户端将要执行的命令加密后传给服务器，服务器接收到报文，解密后执行该命令，将执行的结果加密发送给客户端，客户端将接收到的结果解密后显示到终端上。通信结束或用户空闲时间超时后，关闭会话，断开连接。</li>
+</ul>
+<h2 id="openssh-的组成常见配置和用法">OpenSSH 的组成、常见配置和用法</h2>
+<p>在 Redhat 系操作系统上执行 <code>rpm -ql openssh-clients/openssh-server</code> 就能查询到 OpenSSH 的客户端和服务端分别由哪些可执行文件组成：</p>
+<div class="highlight" cmd="true"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ rpm -ql openssh-clients | grep bin
+</span></span><span style="display:flex;"><span>/usr/bin/scp
+</span></span><span style="display:flex;"><span>/usr/bin/sftp
+</span></span><span style="display:flex;"><span>/usr/bin/slogin
+</span></span><span style="display:flex;"><span>/usr/bin/ssh
+</span></span><span style="display:flex;"><span>/usr/bin/ssh-add
+</span></span><span style="display:flex;"><span>/usr/bin/ssh-agent
+</span></span><span style="display:flex;"><span>/usr/bin/ssh-copy-id
+</span></span><span style="display:flex;"><span>/usr/bin/ssh-keyscan
+</span></span><span style="display:flex;"><span>$ rpm -ql openssh-server | grep bin
+</span></span><span style="display:flex;"><span>/usr/sbin/sshd
+</span></span><span style="display:flex;"><span>/usr/sbin/sshd-keygen
+</span></span></code></pre></div><p>接下来我会分别介绍它们的常用配置和基本使用。</p>
+<h3 id="openssh-clients">openssh-clients</h3>
+<h4 id="客户端配置">客户端配置</h4>
+<p>首先介绍 ssh client 的配置，使用 <code>man ssh_config</code> 命令即可查询到客户端配置的文档信息，从中能看到全局配置的路径为 /etc/ssh/ssh_config，用户配置的路径为 ~/.ssh/config，配置优先级为 命令行选项优于用户配置，用户配置优于全局配置。配置的语法规则为：</p>
+<ul>
+<li>以 <code>#</code> 开头的行或者空行表示注释。</li>
+<li>每行以关键字开头，后面接着参数。关键字不区分大小写，参数区分大小写。</li>
+<li>配置选项可以由空格或者 = 分隔，比如 <code>参数名 参数值</code> 或 <code>参数值=参数名</code>，它们可以混用。</li>
+<li>对于包含空格的参数，可以用双引号 <code>&quot;</code> 括起来。</li>
+</ul>
+<p>下面用一个常见的 ssh_config 示例进行讲解：</p>
+<pre tabindex="0"><code class="language-conf" data-lang="conf"># Host 指令的值一般情况下是带通配符的主机名或者IP地址，但也能自己任意定义一个名字，然后再用 HostName 指令定义真正的主机名；
+# 为客户端连接的主机起名为 cluster，定义它的主机名为 192.168.100.1，使用  ~/.ssh/id_rsa_sroot 进行公钥认证。
+Host cluster
+    User root
+    HostName 192.168.100.1
+    IdentityFile ~/.ssh/id_rsa_sroot
+    PreferredAuthentications publickey
+Host 192.168.200.1?
+    User root
+    IdentityFile ~/.ssh/id_rsa_sroot
+    PreferredAuthentications publickey
+Host *.local
+    User root
+    PreferredAuthentications password
+Match User root
+    # 允许通过单个 socket 共享多个会话，第一次输入密码后便会将套接字一直存在 ControlPath 下，下次连接将免密，直接复用该套接字进行连接。
+    ControlMaster auto
+    ControlPath ~/.ssh/master-%r@%h:%p
+    ControlPersist yes
+Match Host 192.168.200.*
+    ControlMaster auto
+    ControlPath ~/.ssh/master-%r@%h:%p
+    ControlPersist yes
+</code></pre><p>从上面可以看到，我们使用 <code>Host</code> 和 <code>Match</code> 这类指令为界写了五块配置，每块配置仅作用于块指令匹配到的主机。但是若一个主机能匹配到多个块，则它们会同时生效，比如执行 <code>slogin cluster</code> 时，客户端便会使用下面的配置进行连接：</p>
+<pre tabindex="0"><code class="language-conf" data-lang="conf">User root
+HostName 192.168.100.1
+IdentityFile ~/.ssh/id_rsa_sroot
+PreferredAuthentications publickey
+ControlPath ~/.ssh/master-%r@%h:%p
+ControlMaster auto
+ControlPersist yes
+</code></pre><p>因为名称 cluster 刚好匹配 <code>Host cluster</code> 的配置块，然后根据配置它会用 root 用户以密钥认证的形式去连接 192.168.100.1，此时 <code>Match User root</code> 配置块刚好符合条件，所以客户端的配置项将会是这两块合并的结果。
+从以上配置，我们还能发现 <code>Host</code> 和 <code>Match</code> 指令的值用到了通配符对目标进行匹配，使用通配符 <code>?</code> 能恰好匹配一个字符，使用通配符 <code>*</code> 能匹配零个或多个字符。</p>
+<blockquote>
+<p>注：块级指令(<code>Host</code> 和 <code>Match</code>)之下的指令带有缩进仅仅是为了方便查看，实际上不要缩进效果也一样。</p>
+</blockquote>
+<h4 id="客户端使用">客户端使用</h4>
+<p><strong>slogin</strong> 是 ssh 的软链接，大概率是为了兼容 r-commands 使用习惯而创建的，它的用法和 ssh 完全相同，所以不做介绍。</p>
+<p><strong>ssh</strong> 则是 openssh-clients 软件包中最重要的可执行文件了，作为 ssh 的客户端，通过它能进行远程登录：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ssh <span style="color:#f92672">[</span>user@<span style="color:#f92672">]</span>hostname
+</span></span></code></pre></div><p>如果本地用户名与远程用户名一致，登录时可以省略用户名。通过它也能仅运行一个远程命令后直接退出：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ssh <span style="color:#f92672">[</span>user@<span style="color:#f92672">]</span>hostname <span style="color:#f92672">[</span>command<span style="color:#f92672">]</span>
+</span></span></code></pre></div><p>ssh 还支持本地端口转发，远程端口转发以及动态端口转发，这类命令通常会加上 <code>-NTf</code> 选项，<code>-N</code> 选项表示只传输数据不打开 shell ，<code>-T</code> 选项表示不分配 tty，<code>-f</code> 选项表示后台执行。下面用执行命令的主机表示 host1：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 本地端口转发, 下面的命令表示以 host3 主机作为隧道，将本地的 8080 端口转发到 host2 的 5900 端口。</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 相当于 host1:8080 =&gt; host3 =&gt; host2:5900</span>
+</span></span><span style="display:flex;"><span>$ ssh -NTfL 8080:host2:5900 host3
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 远程端口转发，下面的命令表示以 host1 作为隧道，将 host3 的 2222 端口转发到 host2 的 22 端口。</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 相当于 host3:2222 =&gt; host1 =&gt; host2:22</span>
+</span></span><span style="display:flex;"><span>$ ssh -NTfR 2222:host2:22 host3
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 动态转发，表示在本地 2223 端口启动一个代理服务器，将所有请求通过 ssh 隧道转发到 host2 上。</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 相当于 host1:2223 =&gt; host1 =&gt; anywhere </span>
+</span></span><span style="display:flex;"><span>$ ssh -NTfD <span style="color:#ae81ff">2223</span> host2
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 相当于 host1:2223 =&gt; host1 =&gt; www.baidu.com</span>
+</span></span><span style="display:flex;"><span>$ curl -X socket5://localhost:2223 www.baidu.com
+</span></span></code></pre></div><p><strong>scp</strong> 和 <strong>sftp</strong> 都是文件传输类命令，根据名称不难得知，<strong>scp</strong> 是在 SSH-2 协议上的 rcp 实现，而 <strong>sftp</strong> 则是在 SSH-2 协议上的 ftp 实现。一个用于安全复制，一个用于安全文件传输。前者比较简单，所以速度比较快。后者不仅支持文件复制，还支持在交互式环境下对本地或远程文件进行管理和传输，还支持断点续传等特性，功能更加复杂所以速度相对比较慢。
+两者都支持通过一行命令上传和下载文件：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ scp /path/to/localfile <span style="color:#f92672">[</span>user@<span style="color:#f92672">]</span>hostname:/path/to/remotefile
+</span></span><span style="display:flex;"><span>$ sftp /path/to/localfile <span style="color:#f92672">[</span>user@<span style="color:#f92672">]</span>hostname:/path/to/remotefile
+</span></span><span style="display:flex;"><span>$ scp <span style="color:#f92672">[</span>user@<span style="color:#f92672">]</span>hostname:/path/to/remotefile /path/to/localfile
+</span></span><span style="display:flex;"><span>$ sftp <span style="color:#f92672">[</span>user@<span style="color:#f92672">]</span>hostname:/path/to/remotefile /path/to/localfile
+</span></span></code></pre></div><h4 id="客户端认证">客户端认证</h4>
+<p>第一次使用 <strong>密码登录</strong> 时，系统会出现类似下面的提示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ssh 192.168.100.1
+</span></span><span style="display:flex;"><span>The authenticity of host <span style="color:#e6db74">&#39;192.168.100.1 (192.168.100.1)&#39;</span> can<span style="color:#960050;background-color:#1e0010">&#39;</span>t be established.
+</span></span><span style="display:flex;"><span>ECDSA key fingerprint is SHA256:aVHr62YkGohXJMkjgD/MHAokU4ovii0/EqEenN69zNk.
+</span></span><span style="display:flex;"><span>ECDSA key fingerprint is MD5:5e:54:8a:a2:74:2c:4b:42:d3:fb:bb:95:11:2f:04:91.
+</span></span><span style="display:flex;"><span>Are you sure you want to <span style="color:#66d9ef">continue</span> connecting <span style="color:#f92672">(</span>yes/no<span style="color:#f92672">)</span>?
+</span></span></code></pre></div><p>这表示客户端无法确认主机的真实性，只知道它的公钥指纹，问你是否需要继续连接。输入 <code>yes</code> 后，客户端便会把远程主机名，加密方式以及公钥存储在 ~/.ssh/known_hosts 中，再要求输入密码。下次再连接时，客户端就会跳过确认部分，直接输入密码进行认证和连接了。</p>
+<blockquote>
+<p>注：中间人可以伪造公钥，如果不确认公钥指纹是否正确，输入的密码可能被中间人截获。
+注：通过 <code>ssh-keyscan hostname</code> 命令能查看目标主机的完整公钥信息，这些公钥一般放在 /etc/ssh/ssh_host_*.pub 下。</p>
+</blockquote>
+<p>若想免密登录，除了使用 <code>ControlMaster</code> 配置项(第一次仍需要输入密码)以外，还可以使用 <strong>公钥登录</strong> 。
+用户需要先使用 <code>ssh-keygen</code> 生成一个密钥对，然后执行 <code>ssh-copy-id -i /path/to/rsa.pub user@hostname</code> 命令以及输入远程主机的密码，将本地公钥安装到远程主机的 <code>~/.ssh/authorized_keys</code> 中。
+公钥安装成功后便可以通过 <code>ssh -i /path/to/rsa user@hostname</code> 命令进行免密远程登录了。</p>
+<blockquote>
+<p>注：ssh-keygen/ssh-copy-id/ssh 命令使用默认密钥对时可以不指定位置，默认密钥对的位置为 ~/.ssh/id_rsa[.pub]</p>
+</blockquote>
+<p><strong>ssh-agent</strong> 和 <strong>ssh-add</strong> 是一个密钥管理器，ssh-agent 是服务端，通过命令可以进入密钥托管环境:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 实际上就是将自己进程的PID写入到 SSH_AGENT_PID 的环境变量，方便客户端进行连接</span>
+</span></span><span style="display:flex;"><span>$ ssh-agent bash
+</span></span><span style="display:flex;"><span>$ env | grep SSH_AGENT
+</span></span><span style="display:flex;"><span>SSH_AGENT_PID<span style="color:#f92672">=</span><span style="color:#ae81ff">23912</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 将私钥添加到 ssh-agent 中进行托管</span>
+</span></span><span style="display:flex;"><span>$ ssh-add ~/.ssh/my_rsa
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 查看托管的私钥</span>
+</span></span><span style="display:flex;"><span>$ ssh-add -l
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">2048</span> SHA256:hMXQoFMtT6ybjkribSLbYRCWMnoJ3MsBRkbB80abyQU /root/.ssh/my_rsa <span style="color:#f92672">(</span>RSA<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 此时即使不是默认密钥对，也不用指定位置了，前提是客户端需要支持通过 SSH_AGENT_PID 获取私钥</span>
+</span></span><span style="display:flex;"><span>$ ssh user@hostname <span style="color:#f92672">[</span>command<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 删除托管的私钥</span>
+</span></span><span style="display:flex;"><span>$ ssh-add -D /root/.ssh/my_rsa
+</span></span><span style="display:flex;"><span>All identities removed.
+</span></span></code></pre></div><h3 id="openssh-server">openssh-server</h3>
+<h4 id="服务器配置">服务器配置</h4>
+<p>sshd 的配置，使用 man sshd_config 命令即可查询到服务端配置的文档信息，从中能看到默认配置文件的路径为 /etc/ssh/sshd_config，配置文件的路径也可以通过 sshd 的 <code>-f</code> 参数进行指定。服务器通过加载 sshd_config 还会根据里面的配置项加载 Host key 配置以及 authorized_keys 配置。服务端配置的语法规则和客户端类似：</p>
+<ul>
+<li>以 # 开头的行或者空行表示注释。</li>
+<li>每行以关键字开头，后面接着参数。关键字不区分大小写，参数区分大小写。</li>
+<li>对于包含空格的参数，可以用双引号 &quot; 括起来。</li>
+</ul>
+<p>下面是一个常见的 sshd_config 示例：</p>
+<pre tabindex="0"><code class="language-conf" data-lang="conf"># Host key 以及 authorized_keys 文件位置
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+AuthorizedKeysFile      .ssh/authorized_keys
+# 允许密码认证
+PasswordAuthentication yes
+# 启动 PAM 模块
+UsePAM yes
+# 允许 X11 转发
+X11Forwarding yes
+ChallengeResponseAuthentication no
+GSSAPIAuthentication yes
+GSSAPICleanupCredentials no
+# 接受语言相关的环境变量
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+# 子系统的名称和位置
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+</code></pre><p>（完）</p>
+<h2 id="参考">参考</h2>
+<p><a href="https://web.archive.org/web/20170820162632/https://www.scmagazineuk.com/the-new-skeleton-key-changing-the-locks-in-your-network-environment/article/545848/">The new skeleton key: changing the locks in your network environment - Tatu Ylonen</a><br>
+<a href="https://ylonen.org/">Tatu Ylonen 的主页</a><br>
+<a href="https://en.wikipedia.org/wiki/Secure_Shell">Secure_Shell - wiki</a><br>
+<a href="https://www.ssh.com/academy/ssh/config#commonly-used-configuration-options">ssh-config - ssh.com</a><br>
+<a href="http://man.openbsd.org/OpenBSD-current/man5/ssh_config.5#Match">ssh-config - man.openbsd.org</a><br>
+<a href="https://www.ssh.com/academy/ssh/sshd_config">sshd-config - ssh.com</a> <br>
+<a href="https://max.book118.com/html/2015/1105/28553988.shtm"></a></p>
+
+        </div>
+
+        
+        
+        <div class="article-toc" style="display:none;">
+            <h3>Contents</h3>
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#secure-shell-的历史与发展">Secure Shell 的历史与发展</a></li>
+    <li><a href="#secure-shell-协议的基本认识">Secure Shell 协议的基本认识</a></li>
+    <li><a href="#openssh-的组成常见配置和用法">OpenSSH 的组成、常见配置和用法</a>
+      <ul>
+        <li><a href="#openssh-clients">openssh-clients</a></li>
+        <li><a href="#openssh-server">openssh-server</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+        </div>
+        
+        
+
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+        <script>
+            (function() {
+                var $toc = $('#TableOfContents');
+                if ($toc.length > 0) {
+                    var $window = $(window);
+
+                    function onScroll(){
+                        var currentScroll = $window.scrollTop();
+                        var h = $('.article-entry h1, .article-entry h2, .article-entry h3, .article-entry h4, .article-entry h5, .article-entry h6');
+                        var id = "";
+                        h.each(function (i, e) {
+                            e = $(e);
+                            if (e.offset().top - 10 <= currentScroll) {
+                                id = e.attr('id');
+                            }
+                        });
+                        var active = $toc.find('a.active');
+                        if (active.length == 1 && active.eq(0).attr('href') == '#' + id) return true;
+
+                        active.each(function (i, e) {
+                            $(e).removeClass('active').siblings('ul').hide();
+                        });
+                        $toc.find('a[href="#' + id + '"]').parentsUntil('#TableOfContents').each(function (i, e) {
+                            $(e).children('a').addClass('active').siblings('ul').show();
+                        });
+                    }
+
+                    $window.on('scroll', onScroll);
+                    $(document).ready(function() {
+                        $toc.find('a').parent('li').find('ul').hide();
+                        onScroll();
+                        document.getElementsByClassName('article-toc')[0].style.display = '';
+                    });
+                }
+            })();
+        </script>
+        
+
+
+        
+        <footer class="article-footer">
+            <ul class="article-tag-list">
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/secure">secure
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/shell">shell
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/ssh">ssh
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/linux">linux
+                    </a>
+                </li>
+                
+            </ul>
+        </footer>
+        
+    </div>
+    
+
+</article>
+<script src="https://giscus.app/client.js"
+            data-repo="souloss/souloss.github.io"
+            data-repo-id="R_kgDOH127aA"
+            data-category="Announcements"
+            data-category-id="DIC_kwDOH127aM4CQ5q7"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="1"
+            data-input-position="bottom"
+            data-lang="en"
+            data-loading="lazy"
+            data-theme="https://giscus.app/themes/custom_example.css"
+            crossorigin="anonymous"
+            async>
+    </script>
+        
+    </section>
+    <footer id="footer">
+    <div class="outer">
+        <div id="footer-info" class="inner">
+            &copy; 2022 souloss
+            <br />
+            Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with theme <a href="https://github.com/carsonip/hugo-theme-minos" target="_blank">Minos</a>
+        </div>
+    </div>
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/base16/tomorrow-night.min.css" integrity="sha512-RhpnNVOxLt8etr+FHZxS6rugyqr7XelU5OV9wt+Bem7Ua6HRGZOKP/bcuOqOhzEO9b7VrdjLxEz3Yc9FY6xR9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js" integrity="sha512-yUUc0qWm2rhM7X0EFe82LNnv2moqArj5nro/w1bi05A09hRVeIZbN6jlMoyu0+4I/Bu4Ck/85JQIU82T82M28w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    
+
+    
+
+    <script>
+        document.getElementById('main-nav-toggle').addEventListener('click', function () {
+            var header = document.getElementById('header');
+            if (header.classList.contains('mobile-on')) {
+                header.classList.remove('mobile-on');
+            } else {
+                header.classList.add('mobile-on');
+            }
+        });
+    </script>
+</footer>
+
+</div>
+</body>
+</html>

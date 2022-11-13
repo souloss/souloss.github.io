@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wsl 最佳工作指南 // souloss</title>
+    <script async defer data-website-id="05bd36b1-e8ce-4209-be32-afe117e3ea0c" src="https://umima.witchc.io/umami.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    
+    
+    
+
+        <meta property="og:title" content="Wsl 最佳工作指南" />
+    <meta property="og:description" content="" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:url" content="https://souloss.github.io/posts/tools/wsl-best-work-guide/" />
+    
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link href="https://souloss.github.io/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+    <link href="https://souloss.github.io/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="https://souloss.github.io/css/style.css">
+    
+
+    
+
+    <meta name="generator" content="Hugo 0.101.0" />
+</head>
+
+
+<body>
+<div id="container">
+    <header id="header">
+    <div id="header-outer" class="outer">
+        <div id="header-inner" class="inner">
+            <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+            <a id="logo" class="logo-text" href="https://souloss.github.io/">souloss</a>
+            <nav id="main-nav">
+                
+                <a class="main-nav-link" href="/">Home</a>
+                
+                <a class="main-nav-link" href="/archives/">Archives</a>
+                
+                <a class="main-nav-link" href="/tags/">Tags</a>
+                
+                <a class="main-nav-link" href="/categories/">Categories</a>
+                
+                <a class="main-nav-link" href="/index.xml">Rss</a>
+                
+                <a class="main-nav-link" href="/sitemap.xml">SiteMap</a>
+                
+            </nav>
+            <nav id="sub-nav">
+                <div id="search-form-wrap">
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>
+
+    <section id="main" class="outer">
+        <article class="article article-type-post" itemscope itemprop="blogPost">
+    <div class="article-inner">
+        
+        <header class="article-header">
+            <h1 class="article-title" itemprop="name">Wsl 最佳工作指南</h1>
+        </header>
+        
+        <div class="article-meta">
+            <a href="/posts/tools/wsl-best-work-guide/" class="article-date">
+                <time datetime='2022-09-05T20:47:20.000&#43;08:00' itemprop="datePublished">2022-09-05</time>
+            </a>
+            
+            
+            <div class="post-categories">
+                <div class="article-category">
+                    
+                    
+                    <a class="article-category-link" href="https://souloss.github.io//categories/tools">tools</a>
+                    
+                </div>
+            </div>
+            
+            
+        </div>
+        <div class="article-entry" itemprop="articleBody">
+            <h2 id="前言">前言</h2>
+<p>作为 WSL 的忠实客户，从 2019 年起，我就用上刚诞生的 WSL2。但是当时的 WSL2 并不完美，因为各种原因我在使用 WSL2 的过程中经历了以下问题：</p>
+<ul>
+<li>WSL1/2 转换和升级时失败，导致子系统内的全部文件丢失；</li>
+<li>开启/关闭 VPN 时可能会导致连不上 WSL；</li>
+<li>vmmem 占用资源奇高；</li>
+<li>磁盘空间不回收；</li>
+</ul>
+<p>当然，可能不仅仅是以上问题，但这三件事却是我的心头之痛，时不时就会出现折磨我一下。为了优化 WSL 的使用体验，我详细参考了官方资料和互联网的一些答案，在此进行记录。</p>
+<h2 id="1-关注-wsl-官方仓库持续进行内核的更新">1. 关注 WSL 官方仓库，持续进行内核的更新</h2>
+<h3 id="使用-wsl---update-更新">使用 wsl &ndash;update 更新</h3>
+<p>在 <a href="https://github.com/microsoft/WSL">wsl repo</a> 中，我们在 issue 中查到大部分问题，如果是已修复的问题，我们可以通过在管理员权限的 powershell 中键入 <code>wsl --update</code> 更新 wsl 内核，解决问题；</p>
+<h3 id="手动编译内核更新">手动编译内核更新</h3>
+<p>当然，除了使用 wsl 官方发布的内核，也可以自己编译更新版本的内核，编译内核主要有两个渠道：</p>
+<ol>
+<li>基于 <a href="https://github.com/microsoft/WSL2-Linux-Kernel">WSL2-Linux-Kernel</a> repo 中的教程进行编译与更新；也就是 clone 对应版本的仓库后执行 <code>make KCONFIG_CONFIG=Microsoft/config-wsl</code> 编译。</li>
+<li>从 <a href="https://www.kernel.org/">kernel.org</a> 内核官网下载内核，然后将 <a href="https://github.com/microsoft/WSL2-Linux-Kernel/blob/master/Microsoft/config-wsl">config-wsl</a> 放到解压的源码目录的 Microsoft 目录下，并且在该配置中更改内核名称 <code>CONFIG_LOCALVERSION=&quot;-microsoft-wsl-xxxxxx&quot;</code>，最后执行 <code>make KCONFIG_CONFIG=Microsoft/config-wsl -j4</code> 进行编译。</li>
+</ol>
+<p>经过以上两个渠道的编译，我们能得到一个内核文件 vmlinux(也有可能叫其它名字)，我们需要把这个文件移动到 windows 上: <code>mv vmlinux /mnt/c</code>，然后在更改 <code>%USERPROFILE%/.wslconfig</code> 配置文件:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">[wsl2］</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 在 wsl2 标签下加上 kernel 选项</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">kernel</span><span style="color:#f92672">=</span><span style="color:#e6db74">C:\\vmlinux</span>
+</span></span></code></pre></div><p>最后再使用 <code>wsl --shutdown</code> 命令重启子系统即可完成内核的升级。</p>
+<p>如果配置文件无效，也可以将内核文件替换到 <code>C:\Windows\System32\lxss\tools\kernel</code> 位置。</p>
+<p>在子系统中可以通过 <code>uname -r</code> 来查看是否升级成功。</p>
+<h2 id="2-详细配置-wsl限制部分功能提升效能">2. 详细配置 wsl，限制部分功能提升效能</h2>
+<p>首先键入 Win + R 打开运行，输入 <code>%UserProfile%</code> 进入用户目录，然后创建 .wslconfig 文件<a href="https://learn.microsoft.com/zh-cn/windows/wsl/wsl-config?source=recommendations#wslconf">进行配置</a>，以下是常用优化项：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># Settings apply across all Linux distros running on WSL 2</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">[wsl2]</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Limits VM memory to use no more than 4 GB, this can be set as whole numbers using GB or MB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">memory</span><span style="color:#f92672">=</span><span style="color:#e6db74">4GB </span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Sets the VM to use two virtual processors</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">processors</span><span style="color:#f92672">=</span><span style="color:#e6db74">4</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Sets amount of swap storage space to 8GB, default is 25% of available RAM</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">swap</span><span style="color:#f92672">=</span><span style="color:#e6db74">4GB</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Turn off default connection to bind WSL 2 localhost to Windows localhost</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">localhostforwarding</span><span style="color:#f92672">=</span><span style="color:#e6db74">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Boolean to turn on or off support for GUI applications (WSLg) in WSL. Only available for Windows 11.</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">guiApplications</span><span style="color:#f92672">=</span><span style="color:#e6db74">false</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Disables nested virtualization</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># nestedVirtualization=false</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Turns on output console showing contents of dmesg when opening a WSL 2 distro for debugging</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># debugConsole=true</span>
+</span></span></code></pre></div><h2 id="3-资源泄漏关闭子系统虚拟机强制回收内存">3. 资源泄漏？关闭子系统虚拟机强制回收内存</h2>
+<p>如果看到 vmmem 占用资源奇高，并且你没有利用 WSL 启动任何高资源占用的进程时。如果能连上虚拟机，可以连上去详细排查资源占用情况(一般是某处逻辑一直轮询导致的)。若不能连上虚拟机，直接执行 <code>wsl --shutdown</code> 命令停止当前的 VM 实例，再进行重启即可。</p>
+<h2 id="4-参考的对象类型不支持尝试的操作无法连接-wsl试试以下几招">4. 参考的对象类型不支持尝试的操作？无法连接 wsl？试试以下几招</h2>
+<p>有时候使用 wsl 进入子系统时会提示 “参考的对象类型不支持尝试的操作”，这是因为代理软件和 wsl2 的 sock 端口产生了冲突，我们可以通过下面的方式进行修复：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># 首先可以试试这样</span>
+</span></span><span style="display:flex;"><span>netsh winsock reset
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 如果不行再重启 LxssManager</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 注意，该命令停止 LxssManager 是异步的，需要等待一段时间才能重新 start</span>
+</span></span><span style="display:flex;"><span>net stop LxssManager
+</span></span><span style="display:flex;"><span>net start LxssManager
+</span></span></code></pre></div><p>Proxifer 开发人员提供了另外一种解决思路，对 wsl.exe 使用 WSCSetApplicationCategory WinAPI 调用来防止 Winsock LSP DLL 被加载这种情况。通过执行 <a href="bin/NoLsp.exe">NoLsp.exe</a> C:\windows\system32\wsl.exe 在HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters\AppId_Catalog 中为 wsl.exe 创建一个条目，让 Windows 不要将 LSP DLL 加载到 wsl.exe 进程中。</p>
+<h2 id="5-每次唤醒休眠后cpu-占用奇高">5. 每次唤醒休眠后，CPU 占用奇高？</h2>
+<p>可以尝试使用 <code>Win+Ctrl+Shift+B</code> 重新绘制屏幕，或者升级内核，具体可以参考问题 <a href="https://github.com/microsoft/WSL/issues/6982">6982</a>。</p>
+<h2 id="6-磁盘空间不回收的问题">6. 磁盘空间不回收的问题</h2>
+<p>在子系统中使用 <code>du -h --max-dep=1 /</code> 查看磁盘占用，发现实际上占用的空间和虚拟磁盘占用的空间不符合，虚拟磁盘占用的空间明显更大，导致 C 盘空间日益紧缩，此时有两种解决方案：</p>
+<ol>
+<li>可以使用 <a href="https://github.com/pxlrbt/move-wsl">move-wsl</a> 工具迁移虚拟磁盘到另外的盘。</li>
+<li>在 powershell 中执行虚拟磁盘压缩工具：</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-powershell" data-lang="powershell"><span style="display:flex;"><span>wsl --shutdown
+</span></span><span style="display:flex;"><span>diskpart
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># open window Diskpart</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 位置一般存在于 C:\Users\&lt;your username&gt;\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState\ext4.vhdx</span>
+</span></span><span style="display:flex;"><span>select vdisk file=<span style="color:#e6db74">&#34;C:\…\ext4.vhdx&#34;</span>
+</span></span><span style="display:flex;"><span>attach vdisk readonly
+</span></span><span style="display:flex;"><span>compact vdisk
+</span></span><span style="display:flex;"><span>detach vdisk
+</span></span><span style="display:flex;"><span>exit
+</span></span></code></pre></div><blockquote>
+<p>注：数据无价，做以上操作前最好备份下重要的数据。</p>
+</blockquote>
+<h2 id="reference">Reference</h2>
+<p><a href="https://github.com/microsoft/WSL">wsl repo</a><br>
+<a href="https://learn.microsoft.com/zh-cn/windows/wsl/wsl-config?source=recommendations#wslconf">wsl config</a><br>
+<a href="https://wsl.dev/">wsl.dev</a><br>
+<a href="https://www.kernel.org/">kernel.org</a><br>
+<a href="https://github.com/pxlrbt/move-wsl">move-wsl</a>
+<a href="https://github.com/rpasek/usbip-wsl2-instructions">usbip-wsl2-instructions</a><br>
+<a href="www.proxifier.com/tmp/Test20200228/NoLsp.exe">NoLsp.exe 原始下载链接</a></p>
+
+        </div>
+
+        
+        
+        <div class="article-toc" style="display:none;">
+            <h3>Contents</h3>
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#1-关注-wsl-官方仓库持续进行内核的更新">1. 关注 WSL 官方仓库，持续进行内核的更新</a>
+      <ul>
+        <li><a href="#使用-wsl---update-更新">使用 wsl &ndash;update 更新</a></li>
+        <li><a href="#手动编译内核更新">手动编译内核更新</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-详细配置-wsl限制部分功能提升效能">2. 详细配置 wsl，限制部分功能提升效能</a></li>
+    <li><a href="#3-资源泄漏关闭子系统虚拟机强制回收内存">3. 资源泄漏？关闭子系统虚拟机强制回收内存</a></li>
+    <li><a href="#4-参考的对象类型不支持尝试的操作无法连接-wsl试试以下几招">4. 参考的对象类型不支持尝试的操作？无法连接 wsl？试试以下几招</a></li>
+    <li><a href="#5-每次唤醒休眠后cpu-占用奇高">5. 每次唤醒休眠后，CPU 占用奇高？</a></li>
+    <li><a href="#6-磁盘空间不回收的问题">6. 磁盘空间不回收的问题</a></li>
+    <li><a href="#reference">Reference</a></li>
+  </ul>
+</nav>
+        </div>
+        
+        
+
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+        <script>
+            (function() {
+                var $toc = $('#TableOfContents');
+                if ($toc.length > 0) {
+                    var $window = $(window);
+
+                    function onScroll(){
+                        var currentScroll = $window.scrollTop();
+                        var h = $('.article-entry h1, .article-entry h2, .article-entry h3, .article-entry h4, .article-entry h5, .article-entry h6');
+                        var id = "";
+                        h.each(function (i, e) {
+                            e = $(e);
+                            if (e.offset().top - 10 <= currentScroll) {
+                                id = e.attr('id');
+                            }
+                        });
+                        var active = $toc.find('a.active');
+                        if (active.length == 1 && active.eq(0).attr('href') == '#' + id) return true;
+
+                        active.each(function (i, e) {
+                            $(e).removeClass('active').siblings('ul').hide();
+                        });
+                        $toc.find('a[href="#' + id + '"]').parentsUntil('#TableOfContents').each(function (i, e) {
+                            $(e).children('a').addClass('active').siblings('ul').show();
+                        });
+                    }
+
+                    $window.on('scroll', onScroll);
+                    $(document).ready(function() {
+                        $toc.find('a').parent('li').find('ul').hide();
+                        onScroll();
+                        document.getElementsByClassName('article-toc')[0].style.display = '';
+                    });
+                }
+            })();
+        </script>
+        
+
+
+        
+        <footer class="article-footer">
+            <ul class="article-tag-list">
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/windows">windows
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/subsystem">subsystem
+                    </a>
+                </li>
+                
+            </ul>
+        </footer>
+        
+    </div>
+    
+
+</article>
+<script src="https://giscus.app/client.js"
+            data-repo="souloss/souloss.github.io"
+            data-repo-id="R_kgDOH127aA"
+            data-category="Announcements"
+            data-category-id="DIC_kwDOH127aM4CQ5q7"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="1"
+            data-input-position="bottom"
+            data-lang="en"
+            data-loading="lazy"
+            data-theme="https://giscus.app/themes/custom_example.css"
+            crossorigin="anonymous"
+            async>
+    </script>
+        
+    </section>
+    <footer id="footer">
+    <div class="outer">
+        <div id="footer-info" class="inner">
+            &copy; 2022 souloss
+            <br />
+            Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with theme <a href="https://github.com/carsonip/hugo-theme-minos" target="_blank">Minos</a>
+        </div>
+    </div>
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/base16/tomorrow-night.min.css" integrity="sha512-RhpnNVOxLt8etr+FHZxS6rugyqr7XelU5OV9wt+Bem7Ua6HRGZOKP/bcuOqOhzEO9b7VrdjLxEz3Yc9FY6xR9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js" integrity="sha512-yUUc0qWm2rhM7X0EFe82LNnv2moqArj5nro/w1bi05A09hRVeIZbN6jlMoyu0+4I/Bu4Ck/85JQIU82T82M28w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    
+
+    
+
+    <script>
+        document.getElementById('main-nav-toggle').addEventListener('click', function () {
+            var header = document.getElementById('header');
+            if (header.classList.contains('mobile-on')) {
+                header.classList.remove('mobile-on');
+            } else {
+                header.classList.add('mobile-on');
+            }
+        });
+    </script>
+</footer>
+
+</div>
+</body>
+</html>

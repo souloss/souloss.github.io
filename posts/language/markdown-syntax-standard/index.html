@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>markdown 语法支持测试 - 第一版 // souloss</title>
+    <script async defer data-website-id="05bd36b1-e8ce-4209-be32-afe117e3ea0c" src="https://umima.witchc.io/umami.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    
+    <meta name="description" content="描述测试">
+    
+
+        <meta property="og:title" content="markdown 语法支持测试 - 第一版" />
+    <meta property="og:description" content="" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:url" content="https://souloss.github.io/posts/language/markdown-syntax-standard/" />
+    
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link href="https://souloss.github.io/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+    <link href="https://souloss.github.io/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="https://souloss.github.io/css/style.css">
+    
+
+    
+
+    <meta name="generator" content="Hugo 0.101.0" />
+</head>
+
+
+<body>
+<div id="container">
+    <header id="header">
+    <div id="header-outer" class="outer">
+        <div id="header-inner" class="inner">
+            <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+            <a id="logo" class="logo-text" href="https://souloss.github.io/">souloss</a>
+            <nav id="main-nav">
+                
+                <a class="main-nav-link" href="/">Home</a>
+                
+                <a class="main-nav-link" href="/archives/">Archives</a>
+                
+                <a class="main-nav-link" href="/tags/">Tags</a>
+                
+                <a class="main-nav-link" href="/categories/">Categories</a>
+                
+                <a class="main-nav-link" href="/index.xml">Rss</a>
+                
+                <a class="main-nav-link" href="/sitemap.xml">SiteMap</a>
+                
+            </nav>
+            <nav id="sub-nav">
+                <div id="search-form-wrap">
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>
+
+    <section id="main" class="outer">
+        <article class="article article-type-post" itemscope itemprop="blogPost">
+    <div class="article-inner">
+        
+        <header class="article-header">
+            <h1 class="article-title" itemprop="name">markdown 语法支持测试 - 第一版</h1>
+        </header>
+        
+        <div class="article-meta">
+            <a href="/posts/language/markdown-syntax-standard/" class="article-date">
+                <time datetime='2021-05-18T02:04:59.000&#43;08:00' itemprop="datePublished">2021-05-18</time>
+            </a>
+            
+            
+            <div class="post-categories">
+                <div class="article-category">
+                    
+                    
+                    <a class="article-category-link" href="https://souloss.github.io//categories/language">language</a>
+                    
+                </div>
+            </div>
+            
+            
+        </div>
+        <div class="article-entry" itemprop="articleBody">
+            <p>本文主要内容是测试Hugo对Markdown的支持情况，方便后续写作时查阅。</p>
+<h2 id="标题">标题</h2>
+<p>在行首以井号<code>#</code>加空格指定，几个井号就代表几级标题。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-markdown" data-lang="markdown"><span style="display:flex;"><span># 1级标题
+</span></span><span style="display:flex;"><span><span style="color:#75715e">## 2级标题
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>...
+</span></span><span style="display:flex;"><span><span style="color:#75715e">###### 6级标题
+</span></span></span></code></pre></div><h2 id="段落">段落</h2>
+<p>段落之间以至少一行空行为分隔，也可以通过在行尾加 <strong>2个空格</strong> 强制段落内换行。</p>
+<p>段落一的第一行<br>
+段落一的第二行<br>
+&hellip;<br>
+段落一的第N行</p>
+<p>段落二的第一行</p>
+<h2 id="字体样式">文本样式</h2>
+<p>字体样式常用的有粗体、斜体、删除线等。<br>
+<code>*斜体字*</code> 对应 <em>斜体字</em><br>
+<code>**粗体字**</code> 对应 <strong>粗体字</strong><br>
+<code>~~删除线~~</code> 对应 <del>删除线</del><br>
+<code>`行内代码`</code> 对应 <code>行内代码</code></p>
+<p>还有一些样式原生不支持，但是可以通过html间接支持。<br>
+<code>&lt;u&gt;下划线&lt;/u&gt;</code> 对应 <u>下划线</u><br>
+<code>H&lt;sub&gt;2&lt;/sub&gt;O</code> 对应 H<sub>2</sub>O<br>
+<code>爆米&lt;sup&gt;TM&lt;/sup&gt;</code> 对应 爆米<sup>TM</sup><br>
+<code>&lt;span style=&quot;color: orange&quot;&gt;前景色&lt;/span&gt;</code>对应 <span style="color: orange">前景色</span><br>
+<code>&lt;span style=&quot;background: orange&quot;&gt;背景色&lt;/span&gt;</code>对应 <span style="background: orange">背景色</span></p>
+<h2 id="列表">列表</h2>
+<p>列表分为有序列表和无序列表。<br>
+以数字+ <code>.</code> 表示有序列表项：</p>
+<ol>
+<li>有序子项目1</li>
+</ol>
+<p>以 <code>-</code> 或 <code>+</code> 表示无序列表项：</p>
+<ul>
+<li>无序子项目</li>
+</ul>
+<p>可以混合使用，注意同级列表以空格对齐。</p>
+<ol>
+<li>有序子项目一
+<ul>
+<li>无序子项目 1</li>
+<li>无序子项目 2</li>
+</ul>
+</li>
+<li>有序子项目二
+<ul>
+<li>无序子项目 a</li>
+<li>无序子项目 b</li>
+</ul>
+</li>
+</ol>
+<h2 id="图片">图片</h2>
+<p>一般格式是 <code>![文字描述](链接)</code> ：<br>
+<img src="https://github.githubassets.com/images/mona-loading-dark.gif" alt="org-mode-logo"></p>
+<p>这种格式显示图片不能控制对齐和大小，需要的话可以采取raw html的方法：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">p</span> <span style="color:#a6e22e">align</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;center&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://github.githubassets.com/images/mona-loading-dark.gif&#34;</span> <span style="color:#a6e22e">width</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;100&#34;</span> /&gt;
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">p</span>&gt;
+</span></span></code></pre></div><p align="center">
+    <img src="https://github.githubassets.com/images/mona-loading-dark.gif" width="100" />
+</p>
+<div class="admonition tip"><p class="admonition-title">tip</p>
+<p>需要注意的是，Hugo 0.60以上版本需要设置markup.goldmark.renderer的unsafe值为true才支持</p>
+</div>
+<style>
+.admonition {
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  position: relative;
+  margin: .9765em 0;
+  padding: 0 .75rem;
+  border-left: .25rem solid #448aff;
+  border-radius: .125rem;
+  overflow: auto;
+}
+
+.admonition .admonition-title {
+  margin: 0 -0.75rem;
+  padding: .5rem .75rem .5rem 2.5rem;
+  border-bottom: 0.1rem solid rgba(68, 138, 255, 0.1);
+  background-color: rgba(68, 138, 255, 0.1);
+  font-weight: 700;
+}
+
+.admonition .admonition-title:before {
+  cursor: auto;
+  position: absolute;
+  left: .75rem;
+  top: .75rem;
+}
+
+.admonition.note {
+  border-left-color: #448aff;
+}
+
+.admonition.note .admonition-title:before {
+  color: #448aff;
+  content: "\e903";
+}
+
+.admonition.abstract {
+  border-left-color: #00b0ff;
+}
+
+.admonition.abstract .admonition-title {
+  background-color: rgba(0, 176, 255, 0.1);
+}
+
+.admonition.abstract .admonition-title:before {
+  color: #00b0ff;
+  content: "\e9bb";
+}
+
+.admonition.info {
+  border-left-color: #00b8d4;
+}
+
+.admonition.info .admonition-title {
+  background-color: rgba(0, 184, 212, 0.1);
+}
+
+.admonition.info .admonition-title:before {
+  color: #00b8d4;
+  content: "\ea0c";
+}
+
+.admonition.tip {
+  border-left-color: #00bfa5;
+}
+
+.admonition.tip .admonition-title {
+  background-color: rgba(0, 191, 165, 0.1);
+}
+
+.admonition.tip .admonition-title:before {
+  color: #00bfa5;
+  content: "\e906";
+}
+
+.admonition.success {
+  border-left-color: #00c853;
+}
+
+.admonition.success .admonition-title {
+  background-color: rgba(0, 200, 83, 0.1);
+}
+
+.admonition.success .admonition-title:before {
+  color: #00c853;
+  content: "\ea10";
+}
+
+.admonition.question {
+  border-left-color: #64dd17;
+}
+
+.admonition.question .admonition-title {
+  background-color: rgba(100, 221, 23, 0.1);
+}
+
+.admonition.question .admonition-title:before {
+  color: #64dd17;
+  content: "\ea09";
+}
+
+.admonition.warning {
+  border-left-color: #ff9100;
+}
+
+.admonition.warning .admonition-title {
+  background-color: rgba(255, 145, 0, 0.1);
+}
+
+.admonition.warning .admonition-title:before {
+  color: #ff9100;
+  content: "\ea07";
+}
+
+.admonition.failure {
+  border-left-color: #ff5252;
+}
+
+.admonition.failure .admonition-title {
+  background-color: rgba(255, 82, 82, 0.1);
+}
+
+.admonition.failure .admonition-title:before {
+  color: #ff5252;
+  content: "\ea0f";
+}
+
+.admonition.danger {
+  border-left-color: #ff1744;
+}
+
+.admonition.danger .admonition-title {
+  background-color: rgba(255, 23, 68, 0.1);
+}
+
+.admonition.danger .admonition-title:before {
+  color: #ff1744;
+  content: "\e905";
+}
+
+.admonition.bug {
+  border-left-color: #f50057;
+}
+
+.admonition.bug .admonition-title {
+  background-color: rgba(245, 0, 87, 0.1);
+}
+
+.admonition.bug .admonition-title:before {
+  color: #f50057;
+  content: "\e907";
+}
+
+.admonition.example {
+  border-left-color: #651fff;
+}
+
+.admonition.example .admonition-title {
+  background-color: rgba(101, 31, 255, 0.1);
+}
+
+.admonition.example .admonition-title:before {
+  color: #651fff;
+  content: "\e9b9";
+}
+
+.admonition.quote {
+  border-left-color: #9e9e9e;
+}
+
+.admonition.quote .admonition-title {
+  background-color: rgba(158, 158, 158, 0.1);
+}
+
+.admonition.quote .admonition-title:before {
+  color: #9e9e9e;
+  content: "\e904";
+}
+
+.admonition:last-child {
+  margin-bottom: .75rem;
+}
+
+details.admonition summary {
+  display: block;
+  outline: none;
+  cursor: pointer;
+}
+
+details.admonition summary::-webkit-details-marker {
+  display: none;
+}
+
+details.admonition summary:after {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  color: rgba(0, 0, 0, 0.26);
+  content: "\e908";
+}
+
+details.admonition[open] > summary:after {
+  transform: rotate(180deg);
+}
+
+</style>
+<p>链接可以是网络URL，也可以是相对路径。<br>
+相对路径的话需要注意本地路径和(网站)部署路径可能不一致的问题。<br>
+一般还是通过工具 (如 <a href="https://github.com/Molunerfinn/PicGo">PicGo</a>) 上传到图床更方便。</p>
+<h2 id="links">链接</h2>
+<p>链接分为外部链接和内部链接，格式都是 <code>[文字描述](链接)</code> 。<br>
+外部链接就是我们常用的URL，这里不赘述。<br>
+内部链接，也叫anchor，用来引用当前文档的某个位置。<br>
+可以通过以下方式标记位置：</p>
+<pre tabindex="0"><code>{#target}
+</code></pre><p>其中 <code>target</code> 需要取一个有意义的、文档内唯一的名字。<br>
+然后通过以下方式引用，与html的锚类似：</p>
+<pre tabindex="0"><code>[文字描述](#target)
+</code></pre><p>跳转回本章节起始位置☞ <a href="#links">back</a> 。</p>
+<h2 id="引用与代码">引用与代码</h2>
+<p>引用名人名言：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-markdown" data-lang="markdown"><span style="display:flex;"><span><span style="color:#66d9ef">&gt; </span><span style="font-style:italic">Stay Hungry. Stay Foolish -- Steve Jobs
+</span></span></span></code></pre></div><blockquote>
+<p>Stay Hungry. Stay Foolish &ndash; Steve Jobs</p>
+</blockquote>
+<p>引用代码：</p>
+<pre tabindex="0"><code>```语言(可以不填，但是没有语法高亮)
+代码内容
+```
+</code></pre><p>C代码：</p>
+<pre tabindex="0"><code>```c
+int sayHello()
+{
+    printf(&#34;Hello!\n&#34;); // hello everyone
+}
+```
+</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">sayHello</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    printf(<span style="color:#e6db74">&#34;Hello!</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>); <span style="color:#75715e">// hello everyone
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><h2 id="表格">表格</h2>
+<p>创建表格十分简便，基本上组合使用 <code>|</code> <code>-</code> 即可。<br>
+对齐不是硬性要求，第一列 <code>|</code> 也可以省略。</p>
+<pre tabindex="0"><code>简写版本：
+key | value
+--- | ---
+long key | long测试中文
+
+美观版本：
+| key      | value       |
+|----------|-------------|
+| long key | long测试中文 |
+</code></pre><table>
+<thead>
+<tr>
+<th>key</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>long key</td>
+<td>long测试中文</td>
+</tr>
+</tbody>
+</table>
+<h2 id="分隔线">分隔线</h2>
+<p>3个以上横杠 <code>-</code> 单独为一行可以显示分隔线：</p>
+<hr>
+<h2 id="emoji表情">emoji表情</h2>
+<p>支持Github的emoji表情，格式为 <code>:emoji代码:</code> ，具体可以查阅 👉 <a href="https://github.com/ikatyang/emoji-cheat-sheet/blob/master/README.md">这里</a> 。</p>
+<h2 id="公式">公式</h2>
+<p>通过<a href="https://github.com/KaTeX/KaTeX/">katex</a>实现 LaTex 公式排版能力。<br>
+正文显示公式： <code>\\(LaTex公式\\)</code> \(\sum_{i=0}^N\int_{a}^{b}g(t,i)\text{d}t\)<br>
+单独显示公式： <code>$$LaTex公式$$</code><br>
+$$\sum_{i=0}^N\int_{a}^{b}g(t,i)\text{d}t$$</p>
+<p>公式中的换行<code>\\</code>需要写成<code>\\\\</code>：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-latex" data-lang="latex"><span style="display:flex;"><span><span style="color:#66d9ef">\begin</span>{equation}
+</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">\begin</span>{split}
+</span></span><span style="display:flex;"><span> (a + b)^3
+</span></span><span style="display:flex;"><span>    &amp;= (a + b)(a + b)^2            <span style="color:#66d9ef">\\\\</span>
+</span></span><span style="display:flex;"><span>    &amp;= (a + b)(a^2 + 2ab + b^2)    <span style="color:#66d9ef">\\\\</span>
+</span></span><span style="display:flex;"><span>    &amp;= a^3 + 3a^2b + 3ab^2 + b^3
+</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">\end</span>{split}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">\end</span>{equation}
+</span></span></code></pre></div><p>\begin{equation}
+\begin{split}
+(a + b)^3
+&amp;= (a + b)(a + b)^2            \\
+&amp;= (a + b)(a^2 + 2ab + b^2)    \\
+&amp;= a^3 + 3a^2b + 3ab^2 + b^3
+\end{split}
+\end{equation}</p>
+<div class="admonition tip"><p class="admonition-title">tip</p>
+<p>支持显示公式需要设置mathjax选项为true，支持单个$还需要设置mathjaxEnableSingleDollar为true。</p>
+</div>
+<style>
+.admonition {
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  position: relative;
+  margin: .9765em 0;
+  padding: 0 .75rem;
+  border-left: .25rem solid #448aff;
+  border-radius: .125rem;
+  overflow: auto;
+}
+
+.admonition .admonition-title {
+  margin: 0 -0.75rem;
+  padding: .5rem .75rem .5rem 2.5rem;
+  border-bottom: 0.1rem solid rgba(68, 138, 255, 0.1);
+  background-color: rgba(68, 138, 255, 0.1);
+  font-weight: 700;
+}
+
+.admonition .admonition-title:before {
+  cursor: auto;
+  position: absolute;
+  left: .75rem;
+  top: .75rem;
+}
+
+.admonition.note {
+  border-left-color: #448aff;
+}
+
+.admonition.note .admonition-title:before {
+  color: #448aff;
+  content: "\e903";
+}
+
+.admonition.abstract {
+  border-left-color: #00b0ff;
+}
+
+.admonition.abstract .admonition-title {
+  background-color: rgba(0, 176, 255, 0.1);
+}
+
+.admonition.abstract .admonition-title:before {
+  color: #00b0ff;
+  content: "\e9bb";
+}
+
+.admonition.info {
+  border-left-color: #00b8d4;
+}
+
+.admonition.info .admonition-title {
+  background-color: rgba(0, 184, 212, 0.1);
+}
+
+.admonition.info .admonition-title:before {
+  color: #00b8d4;
+  content: "\ea0c";
+}
+
+.admonition.tip {
+  border-left-color: #00bfa5;
+}
+
+.admonition.tip .admonition-title {
+  background-color: rgba(0, 191, 165, 0.1);
+}
+
+.admonition.tip .admonition-title:before {
+  color: #00bfa5;
+  content: "\e906";
+}
+
+.admonition.success {
+  border-left-color: #00c853;
+}
+
+.admonition.success .admonition-title {
+  background-color: rgba(0, 200, 83, 0.1);
+}
+
+.admonition.success .admonition-title:before {
+  color: #00c853;
+  content: "\ea10";
+}
+
+.admonition.question {
+  border-left-color: #64dd17;
+}
+
+.admonition.question .admonition-title {
+  background-color: rgba(100, 221, 23, 0.1);
+}
+
+.admonition.question .admonition-title:before {
+  color: #64dd17;
+  content: "\ea09";
+}
+
+.admonition.warning {
+  border-left-color: #ff9100;
+}
+
+.admonition.warning .admonition-title {
+  background-color: rgba(255, 145, 0, 0.1);
+}
+
+.admonition.warning .admonition-title:before {
+  color: #ff9100;
+  content: "\ea07";
+}
+
+.admonition.failure {
+  border-left-color: #ff5252;
+}
+
+.admonition.failure .admonition-title {
+  background-color: rgba(255, 82, 82, 0.1);
+}
+
+.admonition.failure .admonition-title:before {
+  color: #ff5252;
+  content: "\ea0f";
+}
+
+.admonition.danger {
+  border-left-color: #ff1744;
+}
+
+.admonition.danger .admonition-title {
+  background-color: rgba(255, 23, 68, 0.1);
+}
+
+.admonition.danger .admonition-title:before {
+  color: #ff1744;
+  content: "\e905";
+}
+
+.admonition.bug {
+  border-left-color: #f50057;
+}
+
+.admonition.bug .admonition-title {
+  background-color: rgba(245, 0, 87, 0.1);
+}
+
+.admonition.bug .admonition-title:before {
+  color: #f50057;
+  content: "\e907";
+}
+
+.admonition.example {
+  border-left-color: #651fff;
+}
+
+.admonition.example .admonition-title {
+  background-color: rgba(101, 31, 255, 0.1);
+}
+
+.admonition.example .admonition-title:before {
+  color: #651fff;
+  content: "\e9b9";
+}
+
+.admonition.quote {
+  border-left-color: #9e9e9e;
+}
+
+.admonition.quote .admonition-title {
+  background-color: rgba(158, 158, 158, 0.1);
+}
+
+.admonition.quote .admonition-title:before {
+  color: #9e9e9e;
+  content: "\e904";
+}
+
+.admonition:last-child {
+  margin-bottom: .75rem;
+}
+
+details.admonition summary {
+  display: block;
+  outline: none;
+  cursor: pointer;
+}
+
+details.admonition summary::-webkit-details-marker {
+  display: none;
+}
+
+details.admonition summary:after {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  color: rgba(0, 0, 0, 0.26);
+  content: "\e908";
+}
+
+details.admonition[open] > summary:after {
+  transform: rotate(180deg);
+}
+
+</style>
+<h2 id="脚注footnote">脚注Footnote</h2>
+<p>脚注主要有数字脚注<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>和命名脚注<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>。<br>
+在文章末尾行首以下面的方式可以定义脚注：<br>
+<code>[^数字]: 数字脚注内容</code><br>
+<code>[^名字]: 命名脚注内容</code><br>
+在文中通过 <code>[^数字]</code> 或者 <code>[^名字]</code> 引用即可。<br>
+不过命名脚注显示在页面上还是数字脚注的形式。。。</p>
+<h2 id="任务列表">任务列表</h2>
+<p>任务列表是在无序列表的基础上扩展的，属于GFM标准。</p>
+<pre tabindex="0"><code>- [ ] 列表1
+- [x] 列表2
+</code></pre><ul>
+<li><input disabled="" type="checkbox"> 列表1</li>
+<li><input checked="" disabled="" type="checkbox"> 列表2</li>
+</ul>
+<h2 id="shortcodeshttpshugo-theme-evennetlifyapppostshortcodes-测试"><a href="https://hugo-theme-even.netlify.app/post/shortcodes/">Shortcodes</a> 测试</h2>
+<h3 id="网易云音乐">网易云音乐</h3>
+  <iframe style="max-width: 100%"
+      class="music163"
+      frameborder="no"
+      border="0"
+      marginwidth="0"
+      marginheight="0"
+      width="330"
+      height="86"
+      src="//music.163.com/outchain/player?type=2&id=1935948260&auto=0&height=66">
+    </iframe>
+<h3 id="bilibili视频">bilibili视频</h3>
+<div style="text-align:center"><iframe id="biliplayer" src="//player.bilibili.com/player.html?bvid=BV1rr4y147Lt&page=1" scrolling="no" border="0" height="480px" width="720px" frameborder="no" framespacing="0" allowfullscreen="true" loading="lazy" > </iframe></div>
+<style>
+ 
+#bilibili {
+  width: 100%;
+  height: 550px;
+}
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+  #bilibili {
+    width: 100%;
+    height: 250px;
+  }
+}
+</style>
+<h3 id="youtube-视频">youtube 视频</h3>
+<div style="text-align:center">
+<iframe style="width:560px; height:315px;" src="https://www.youtube.com/embed/aQ39YQE-CdQ" frameborder="0" allowfullscreen scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" loading="lazy"></iframe>
+</div>
+<div class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1">
+<p><a href="https://guides.github.com/features/mastering-markdown">https://guides.github.com/features/mastering-markdown</a>&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2">
+<p><a href="https://github.com/ikatyang/emoji-cheat-sheet/blob/master/README.md">https://github.com/ikatyang/emoji-cheat-sheet/blob/master/README.md</a>&#160;<a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</div>
+        </div>
+
+        
+        
+        <div class="article-toc" style="display:none;">
+            <h3>Contents</h3>
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#标题">标题</a></li>
+    <li><a href="#段落">段落</a></li>
+    <li><a href="#字体样式">文本样式</a></li>
+    <li><a href="#列表">列表</a></li>
+    <li><a href="#图片">图片</a></li>
+    <li><a href="#links">链接</a></li>
+    <li><a href="#引用与代码">引用与代码</a></li>
+    <li><a href="#表格">表格</a></li>
+    <li><a href="#分隔线">分隔线</a></li>
+    <li><a href="#emoji表情">emoji表情</a></li>
+    <li><a href="#公式">公式</a></li>
+    <li><a href="#脚注footnote">脚注Footnote</a></li>
+    <li><a href="#任务列表">任务列表</a></li>
+    <li><a href="#shortcodeshttpshugo-theme-evennetlifyapppostshortcodes-测试"><a href="https://hugo-theme-even.netlify.app/post/shortcodes/">Shortcodes</a> 测试</a>
+      <ul>
+        <li><a href="#网易云音乐">网易云音乐</a></li>
+        <li><a href="#bilibili视频">bilibili视频</a></li>
+        <li><a href="#youtube-视频">youtube 视频</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+        </div>
+        
+        
+
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+        <script>
+            (function() {
+                var $toc = $('#TableOfContents');
+                if ($toc.length > 0) {
+                    var $window = $(window);
+
+                    function onScroll(){
+                        var currentScroll = $window.scrollTop();
+                        var h = $('.article-entry h1, .article-entry h2, .article-entry h3, .article-entry h4, .article-entry h5, .article-entry h6');
+                        var id = "";
+                        h.each(function (i, e) {
+                            e = $(e);
+                            if (e.offset().top - 10 <= currentScroll) {
+                                id = e.attr('id');
+                            }
+                        });
+                        var active = $toc.find('a.active');
+                        if (active.length == 1 && active.eq(0).attr('href') == '#' + id) return true;
+
+                        active.each(function (i, e) {
+                            $(e).removeClass('active').siblings('ul').hide();
+                        });
+                        $toc.find('a[href="#' + id + '"]').parentsUntil('#TableOfContents').each(function (i, e) {
+                            $(e).children('a').addClass('active').siblings('ul').show();
+                        });
+                    }
+
+                    $window.on('scroll', onScroll);
+                    $(document).ready(function() {
+                        $toc.find('a').parent('li').find('ul').hide();
+                        onScroll();
+                        document.getElementsByClassName('article-toc')[0].style.display = '';
+                    });
+                }
+            })();
+        </script>
+        
+
+
+        
+        <footer class="article-footer">
+            <ul class="article-tag-list">
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/markdown">markdown
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/gfm">GFM
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/latex">LaTex
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/emoji">emoji
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/picgo">PicGo
+                    </a>
+                </li>
+                
+            </ul>
+        </footer>
+        
+    </div>
+    
+
+</article>
+<script src="https://giscus.app/client.js"
+            data-repo="souloss/souloss.github.io"
+            data-repo-id="R_kgDOH127aA"
+            data-category="Announcements"
+            data-category-id="DIC_kwDOH127aM4CQ5q7"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="1"
+            data-input-position="bottom"
+            data-lang="en"
+            data-loading="lazy"
+            data-theme="https://giscus.app/themes/custom_example.css"
+            crossorigin="anonymous"
+            async>
+    </script>
+        
+    </section>
+    <footer id="footer">
+    <div class="outer">
+        <div id="footer-info" class="inner">
+            &copy; 2022 souloss
+            <br />
+            Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with theme <a href="https://github.com/carsonip/hugo-theme-minos" target="_blank">Minos</a>
+        </div>
+    </div>
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/base16/tomorrow-night.min.css" integrity="sha512-RhpnNVOxLt8etr+FHZxS6rugyqr7XelU5OV9wt+Bem7Ua6HRGZOKP/bcuOqOhzEO9b7VrdjLxEz3Yc9FY6xR9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js" integrity="sha512-yUUc0qWm2rhM7X0EFe82LNnv2moqArj5nro/w1bi05A09hRVeIZbN6jlMoyu0+4I/Bu4Ck/85JQIU82T82M28w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    
+    
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/katex.min.css" integrity="sha512-kZNsJznccVXEWz7/xUNAv9kZb0rikSLqgv6s0KRa64HBdiTKODczgMh/a61gIFTsyEK7BlJeTdfptyeRucj0gA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/katex.min.js" integrity="sha512-ZzM/Uqhj1eqNuEJogsoiJ502Z42nrIk1PS6NBSZswLpNSXyWyRBqxcM1S3Z5fP8ZmIXIpUFYWxgQHriLfGr1XQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js" integrity="sha512-ZA/RPrAo88DlwRnnoNVqKINnQNcWERzRK03PDaA4GIJiVZvGFIWQbdWCsUebMZfkWohnfngsDjXzU6PokO4jGw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/contrib/copy-tex.min.css" integrity="sha512-5zvaCrmt99i+lxvmpcKWkbuhOyYWnti1UUpM6vKp/AvlcDlbpDZ1K9B5K/gV9UGO19lwck8idbWaTbPvIfqGSw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/contrib/copy-tex.min.js" integrity="sha512-69oQlJyjN7VLQDagAaaOrUfgp66VdWTi0ZBy7aoAraAH8H2C13YM+JAPR0N3KBW7G82gDnvcb0l953DOi0GyoQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/contrib/mathtex-script-type.min.js" integrity="sha512-MBhOGY4yRA2eATtRGTcrDJCRqcnLai5+uu47GA2ueVr1MPzirC/iogLWRA8CXTlOTK09VI4fdTe4qE4LBfjsHw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/contrib/mhchem.min.js" integrity="sha512-V1hl0fnOXW6Cdqe5ZVqtw8TBpJVpu3XRDRQti96j/04+tMarPrCdXEUE3UdfvfKYTpOn9DV4zEZBVr0HhDiuiQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.15.6/contrib/render-a11y-string.min.js" integrity="sha512-3cMSnhBLF9auKu346+105XQfxGDUdbX8KISEWUItbUW9cwvqQZ137Du5jpzTwn9x2+Q1YXh02Hkrj5vsyNG3Tw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>renderMathInElement(document.body);</script>
+    
+
+    
+
+    <script>
+        document.getElementById('main-nav-toggle').addEventListener('click', function () {
+            var header = document.getElementById('header');
+            if (header.classList.contains('mobile-on')) {
+                header.classList.remove('mobile-on');
+            } else {
+                header.classList.add('mobile-on');
+            }
+        });
+    </script>
+</footer>
+
+</div>
+</body>
+</html>

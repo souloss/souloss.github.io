@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>souloss</title>
+    <link>https://souloss.github.io/</link>
+    <description>Recent content on souloss</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+</copyright>
+    <lastBuildDate>Mon, 05 Sep 2022 20:47:20 +0800</lastBuildDate><atom:link href="https://souloss.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Wsl 最佳工作指南</title>
+      <link>https://souloss.github.io/posts/tools/wsl-best-work-guide/</link>
+      <pubDate>Mon, 05 Sep 2022 20:47:20 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/tools/wsl-best-work-guide/</guid>
+      <description>本文主要用于总结作者是怎么持续优化 WSL 使用体验的</description>
+    </item>
+    
+    <item>
+      <title>自顶向下学习 zap 日志库</title>
+      <link>https://souloss.github.io/posts/library/golang/top-down-learning-zap/</link>
+      <pubDate>Sun, 12 Jun 2022 20:47:20 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/library/golang/top-down-learning-zap/</guid>
+      <description>阅读 Go 语言经典日志库 zap，以自顶向下的方式学习它的代码设计与使用，并且提供常见场景下的使用方案</description>
+    </item>
+    
+    <item>
+      <title>Linux 服务器时间同步</title>
+      <link>https://souloss.github.io/posts/language/linux-time-sync/</link>
+      <pubDate>Tue, 14 Dec 2021 23:05:59 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/language/linux-time-sync/</guid>
+      <description>简单的 linux 服务器时间同步教程</description>
+    </item>
+    
+    <item>
+      <title>Secure Shell Learn</title>
+      <link>https://souloss.github.io/posts/tools/ssh-learn/</link>
+      <pubDate>Sat, 04 Dec 2021 20:47:20 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/tools/ssh-learn/</guid>
+      <description>介绍 ssh 的起源以及客户端和服务器的基本使用</description>
+    </item>
+    
+    <item>
+      <title>我的技术博客之路</title>
+      <link>https://souloss.github.io/posts/idea/talking-about-writing/</link>
+      <pubDate>Tue, 09 Nov 2021 01:03:37 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/idea/talking-about-writing/</guid>
+      <description>简单介绍我的写作经历与经验</description>
+    </item>
+    
+    <item>
+      <title>markdown 语法支持测试 - 第一版</title>
+      <link>https://souloss.github.io/posts/language/markdown-syntax-standard/</link>
+      <pubDate>Tue, 18 May 2021 02:04:59 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/language/markdown-syntax-standard/</guid>
+      <description>&lt;p&gt;本文主要内容是测试Hugo对Markdown的支持情况，方便后续写作时查阅。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>markdown 语法支持测试 - 第二版</title>
+      <link>https://souloss.github.io/posts/language/markdown-syntax/</link>
+      <pubDate>Tue, 18 May 2021 02:04:59 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/language/markdown-syntax/</guid>
+      <description>测试摘要</description>
+    </item>
+    
+  </channel>
+</rss>

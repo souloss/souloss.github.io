@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>系统服务 on souloss</title>
+    <link>https://souloss.github.io/categories/%E7%B3%BB%E7%BB%9F%E6%9C%8D%E5%8A%A1/</link>
+    <description>Recent content in 系统服务 on souloss</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+</copyright>
+    <lastBuildDate>Tue, 14 Dec 2021 23:05:59 +0800</lastBuildDate><atom:link href="https://souloss.github.io/categories/%E7%B3%BB%E7%BB%9F%E6%9C%8D%E5%8A%A1/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Linux 服务器时间同步</title>
+      <link>https://souloss.github.io/posts/language/linux-time-sync/</link>
+      <pubDate>Tue, 14 Dec 2021 23:05:59 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/language/linux-time-sync/</guid>
+      <description>简单的 linux 服务器时间同步教程</description>
+    </item>
+    
+  </channel>
+</rss>

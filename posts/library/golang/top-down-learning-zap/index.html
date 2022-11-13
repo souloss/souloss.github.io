@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>自顶向下学习 zap 日志库 // souloss</title>
+    <script async defer data-website-id="05bd36b1-e8ce-4209-be32-afe117e3ea0c" src="https://umima.witchc.io/umami.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    
+    <meta name="description" content="自顶向下阅读 zap 库源码">
+    
+
+        <meta property="og:title" content="自顶向下学习 zap 日志库" />
+    <meta property="og:description" content="" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:url" content="https://souloss.github.io/posts/library/golang/top-down-learning-zap/" />
+    
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <link href="https://souloss.github.io/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+    <link href="https://souloss.github.io/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" href="https://souloss.github.io/css/style.css">
+    
+
+    
+
+    <meta name="generator" content="Hugo 0.101.0" />
+</head>
+
+
+<body>
+<div id="container">
+    <header id="header">
+    <div id="header-outer" class="outer">
+        <div id="header-inner" class="inner">
+            <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+            <a id="logo" class="logo-text" href="https://souloss.github.io/">souloss</a>
+            <nav id="main-nav">
+                
+                <a class="main-nav-link" href="/">Home</a>
+                
+                <a class="main-nav-link" href="/archives/">Archives</a>
+                
+                <a class="main-nav-link" href="/tags/">Tags</a>
+                
+                <a class="main-nav-link" href="/categories/">Categories</a>
+                
+                <a class="main-nav-link" href="/index.xml">Rss</a>
+                
+                <a class="main-nav-link" href="/sitemap.xml">SiteMap</a>
+                
+            </nav>
+            <nav id="sub-nav">
+                <div id="search-form-wrap">
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>
+
+    <section id="main" class="outer">
+        <article class="article article-type-post" itemscope itemprop="blogPost">
+    <div class="article-inner">
+        
+        <header class="article-header">
+            <h1 class="article-title" itemprop="name">自顶向下学习 zap 日志库</h1>
+        </header>
+        
+        <div class="article-meta">
+            <a href="/posts/library/golang/top-down-learning-zap/" class="article-date">
+                <time datetime='2022-06-12T20:47:20.000&#43;08:00' itemprop="datePublished">2022-06-12</time>
+            </a>
+            
+            
+            <div class="post-categories">
+                <div class="article-category">
+                    
+                    
+                    <a class="article-category-link" href="https://souloss.github.io//categories/library">library</a>
+                    
+                </div>
+            </div>
+            
+            
+        </div>
+        <div class="article-entry" itemprop="articleBody">
+            <h2 id="什么是-zap-">什么是 Zap ?</h2>
+<p>Zap 是由优步(Uber)所开发和维护的一款 golang 开源日志库，它的特点包括：</p>
+<ul>
+<li>高性能：以无反射，零分配为宗旨进行优化，在拥有基本功能的前提下实现最佳的性能。</li>
+<li>结构化：支持通过编码器将一条日志记录结构化为 JSON，方便其它组件采集和分析。</li>
+<li>可扩展：支持从编码器(例如BSON)，接收器(例如Kafka)，多路输出(同时输出到文件和流)等方向进行扩展。</li>
+</ul>
+<p>在使用 Zap 之前，我们可以回顾一下一个日志包一般会提供什么功能：</p>
+<ul>
+<li>多实例：可以创建多个不同的日志记录器，实现互不影响的记录与输出等行为。</li>
+<li>日志配置：我们可以通过配置在一定程度上影响日志记录器的行为。</li>
+<li>分级记录和输出：通过 日志记录器(Logger) 提供的 INFO, DEBUG 等接口记录不同级别的日志，根据配置中的日志级别决定是否输出该条日志。</li>
+<li>日志格式化器：将日志格式化为特定的格式，方便人类/程序读取。</li>
+<li>日志输出器：负责将日志输出到一个或多个指定位置。</li>
+<li>日志轮转；使日志输出的文件大小和数量保持一定，避免爆磁盘。</li>
+</ul>
+<p>从以上我们可以发现，日志记录的生命周期大概为：
+创建日志配置 =&gt; 创建日志记录器 =&gt; 记录指定级别和消息的日志 =&gt; 输出过滤 =&gt; 日志消息格式化 =&gt; 日志输出 =&gt; 判断是否需要轮转</p>
+<p>现在，我们可以先自顶向下分析下 Zap 的组成。看它是否支持这些能力，如果支持的话，又是怎样实现这些能力的。</p>
+<h3 id="从-logger-的创建开始">从 Logger 的创建开始</h3>
+<p>怎样使用 zap 创建一个日志记录器，我们可以从 <code>logger.go</code> 入手，创建一个用于记录的 Logger 有如下几种方式：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// 用于开发环境的预设日志记录器工厂
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">NewDevelopment</span>(<span style="color:#a6e22e">options</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 用于生产环境的预设日志记录器工厂
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">NewProduction</span>(<span style="color:#a6e22e">options</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 用于测试环境的预设日志记录器工厂
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">NewExample</span>(<span style="color:#a6e22e">options</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 自定义 zapcore 的日志记录器 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">core</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Core</span>, <span style="color:#a6e22e">options</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span> 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 接口更加简单的日志记录器，可以通过上面的日志记录器预设工厂函数创建后转换获取
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Sugar</span>() <span style="color:#f92672">*</span><span style="color:#a6e22e">SugaredLogger</span>
+</span></span></code></pre></div><p>从 <code>logger.go</code> 和 <code>sugar.go</code> 中可以对比得知，Logger 和 SugaredLogger 的接口区别是：</p>
+<ul>
+<li>Logger 仅支持字符串消息，携带上下文信息(字段)时需要指定类型。</li>
+<li>SugaredLogger 支持字符串，字符串模版和携带上下文信息时不需要指定类型。</li>
+</ul>
+<p>从上面几个预设好的日志记录器工厂函数中，我们可以发现它们实际上都是调用 <code>New(core zapcore.Core, options ...Option) *Logger</code> 创建出的实例。<code>NewDevelopment</code> 和 <code>NewProduction</code> 更高级一点，它们的日志记录器是通过 <code>Config</code> 构建出来的。</p>
+<p>我们可以先从 <code>Config</code> 开始，观察一个日志记录器拥有哪些配置项，这些配置项又是怎样转化为日志记录器的内部状态的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// 日志记录器配置结构体
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Config</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Level is the minimum enabled logging level. Note that this is a dynamic
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// level, so calling Config.Level.SetLevel will atomically change the log
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// level of all loggers descended from this config.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Level</span> <span style="color:#a6e22e">AtomicLevel</span> <span style="color:#e6db74">`json:&#34;level&#34; yaml:&#34;level&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Development puts the logger in development mode, which changes the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// behavior of DPanicLevel and takes stacktraces more liberally.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Development</span> <span style="color:#66d9ef">bool</span> <span style="color:#e6db74">`json:&#34;development&#34; yaml:&#34;development&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// DisableCaller stops annotating logs with the calling function&#39;s file
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// name and line number. By default, all logs are annotated.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">DisableCaller</span> <span style="color:#66d9ef">bool</span> <span style="color:#e6db74">`json:&#34;disableCaller&#34; yaml:&#34;disableCaller&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// DisableStacktrace completely disables automatic stacktrace capturing. By
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// default, stacktraces are captured for WarnLevel and above logs in
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// development and ErrorLevel and above in production.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">DisableStacktrace</span> <span style="color:#66d9ef">bool</span> <span style="color:#e6db74">`json:&#34;disableStacktrace&#34; yaml:&#34;disableStacktrace&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Sampling</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SamplingConfig</span> <span style="color:#e6db74">`json:&#34;sampling&#34; yaml:&#34;sampling&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Encoding sets the logger&#39;s encoding. Valid values are &#34;json&#34; and
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// &#34;console&#34;, as well as any third-party encodings registered via
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// RegisterEncoder.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Encoding</span> <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;encoding&#34; yaml:&#34;encoding&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// EncoderConfig sets options for the chosen encoder. See
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// zapcore.EncoderConfig for details.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">EncoderConfig</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">EncoderConfig</span> <span style="color:#e6db74">`json:&#34;encoderConfig&#34; yaml:&#34;encoderConfig&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// OutputPaths is a list of URLs or file paths to write logging output to.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// See Open for details.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">OutputPaths</span> []<span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;outputPaths&#34; yaml:&#34;outputPaths&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// ErrorOutputPaths is a list of URLs to write internal logger errors to.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// The default is standard error.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// Note that this setting only affects internal errors; for sample code that
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// sends error-level logs to a different location from info- and debug-level
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// logs, see the package-level AdvancedConfiguration example.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">ErrorOutputPaths</span> []<span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;errorOutputPaths&#34; yaml:&#34;errorOutputPaths&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// InitialFields is a collection of fields to add to the root logger.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">InitialFields</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">interface</span>{} <span style="color:#e6db74">`json:&#34;initialFields&#34; yaml:&#34;initialFields&#34;`</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 原子级别结构体
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">AtomicLevel</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">l</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">atomic</span>.<span style="color:#a6e22e">Int32</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 编码器配置结构体，这是 zapcore 包中的结构
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// An EncoderConfig allows users to configure the concrete encoders supplied by
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// zapcore.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">EncoderConfig</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Set the keys used for each log entry. If any key is empty, that portion
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// of the entry is omitted.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">MessageKey</span>     <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;messageKey&#34; yaml:&#34;messageKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">LevelKey</span>       <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;levelKey&#34; yaml:&#34;levelKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">TimeKey</span>        <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;timeKey&#34; yaml:&#34;timeKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">NameKey</span>        <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;nameKey&#34; yaml:&#34;nameKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">CallerKey</span>      <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;callerKey&#34; yaml:&#34;callerKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">FunctionKey</span>    <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;functionKey&#34; yaml:&#34;functionKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">StacktraceKey</span>  <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;stacktraceKey&#34; yaml:&#34;stacktraceKey&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">SkipLineEnding</span> <span style="color:#66d9ef">bool</span>   <span style="color:#e6db74">`json:&#34;skipLineEnding&#34; yaml:&#34;skipLineEnding&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">LineEnding</span>     <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;lineEnding&#34; yaml:&#34;lineEnding&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Configure the primitive representations of common complex types. For
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// example, some users may want all time.Times serialized as floating-point
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// seconds since epoch, while others may prefer ISO8601 strings.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// type LevelEncoder func(Level, PrimitiveArrayEncoder)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">EncodeLevel</span>    <span style="color:#a6e22e">LevelEncoder</span>    <span style="color:#e6db74">`json:&#34;levelEncoder&#34; yaml:&#34;levelEncoder&#34;`</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// type TimeEncoder func(time.Time, PrimitiveArrayEncoder)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">EncodeTime</span>     <span style="color:#a6e22e">TimeEncoder</span>     <span style="color:#e6db74">`json:&#34;timeEncoder&#34; yaml:&#34;timeEncoder&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// type DurationEncoder func(time.Duration, PrimitiveArrayEncoder)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">EncodeDuration</span> <span style="color:#a6e22e">DurationEncoder</span> <span style="color:#e6db74">`json:&#34;durationEncoder&#34; yaml:&#34;durationEncoder&#34;`</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">EncodeCaller</span>   <span style="color:#a6e22e">CallerEncoder</span>   <span style="color:#e6db74">`json:&#34;callerEncoder&#34; yaml:&#34;callerEncoder&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Unlike the other primitive type encoders, EncodeName is optional. The
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// zero value falls back to FullNameEncoder.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// type NameEncoder func(string, PrimitiveArrayEncoder)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">EncodeName</span> <span style="color:#a6e22e">NameEncoder</span> <span style="color:#e6db74">`json:&#34;nameEncoder&#34; yaml:&#34;nameEncoder&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Configure the encoder for interface{} type objects.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// If not provided, objects are encoded using json.Encoder
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">NewReflectedEncoder</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">Writer</span>) <span style="color:#a6e22e">ReflectedEncoder</span> <span style="color:#e6db74">`json:&#34;-&#34; yaml:&#34;-&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Configures the field separator used by the console encoder. Defaults
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// to tab.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">ConsoleSeparator</span> <span style="color:#66d9ef">string</span> <span style="color:#e6db74">`json:&#34;consoleSeparator&#34; yaml:&#34;consoleSeparator&#34;`</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 采样结构体
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// SamplingConfig sets a sampling strategy for the logger. Sampling caps the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// global CPU and I/O load that logging puts on your process while attempting
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// to preserve a representative subset of your logs.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// If specified, the Sampler will invoke the Hook after each decision.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// Values configured here are per-second. See zapcore.NewSamplerWithOptions for
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// details.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SamplingConfig</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Initial</span>    <span style="color:#66d9ef">int</span>                                           <span style="color:#e6db74">`json:&#34;initial&#34; yaml:&#34;initial&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Thereafter</span> <span style="color:#66d9ef">int</span>                                           <span style="color:#e6db74">`json:&#34;thereafter&#34; yaml:&#34;thereafter&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Hook</span>       <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>, <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">SamplingDecision</span>) <span style="color:#e6db74">`json:&#34;-&#34; yaml:&#34;-&#34;`</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>从以上可以看到创建一个日志记录器的配置项可以配置日志级别，开发模式，调用者跟踪和堆栈跟踪，采样器，编码器，标准和错误输出的位置，初始化的公共字段等项。这些配置项一部分用于构造 <code>Encoder</code>，一部分用于构造 <code>WriteSyncer</code>，其它部分则用于构造 <code>Option</code>，最后调用 <code>zap.New</code> 构造出日志记录器。</p>
+<p>在大概了解了一个日志记录器存在哪些状态之后，接下来我们可以进一步分析日志记录器是怎样创建出来的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// zapcore 包中的接口
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Core</span> <span style="color:#66d9ef">interface</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">LevelEnabler</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// With adds structured context to the Core.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">With</span>([]<span style="color:#a6e22e">Field</span>) <span style="color:#a6e22e">Core</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Check determines whether the supplied Entry should be logged (using the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// embedded LevelEnabler and possibly some extra logic). If the entry
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// should be logged, the Core adds itself to the CheckedEntry and returns
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// the result.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// Callers must use Check before calling Write.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Check</span>(<span style="color:#a6e22e">Entry</span>, <span style="color:#f92672">*</span><span style="color:#a6e22e">CheckedEntry</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">CheckedEntry</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Write serializes the Entry and any Fields supplied at the log site and
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// writes them to their destination.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// If called, Write should always log the Entry and Fields; it should not
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// replicate the logic of Check.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">Entry</span>, []<span style="color:#a6e22e">Field</span>) <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Sync flushes buffered logs (if any).
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Sync</span>() <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">core</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Core</span>, <span style="color:#a6e22e">options</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">core</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">NewNop</span>()
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">log</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">Logger</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">core</span>:        <span style="color:#a6e22e">core</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">errorOutput</span>: <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Lock</span>(<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stderr</span>),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">addStack</span>:    <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">FatalLevel</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">clock</span>:       <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">DefaultClock</span>,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">WithOptions</span>(<span style="color:#a6e22e">options</span><span style="color:#f92672">...</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>从上面可以看出，我们使用的 <code>Logger</code> 实际上是 <code>zapcore.Core</code> 的一层封装。<code>zapcore.Core</code> 提供日志操作的底层最小接口，并且每种接口都提供了默认实现(参考 Encoder)。</p>
+<h3 id="zaplogger-是怎样打印一条日志的">zap.Logger 是怎样打印一条日志的</h3>
+<p>在上一节，我们了解了怎样创建一个 <code>zap.Logger</code>，接下来我们可以从 <code>Logger.Info</code> 函数开始阅读，观察日志记录器是怎样打印一条日志的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) <span style="color:#a6e22e">Info</span>(<span style="color:#a6e22e">msg</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">fields</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Field</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 检查是否需要写入日志
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ce</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">check</span>(<span style="color:#a6e22e">InfoLevel</span>, <span style="color:#a6e22e">msg</span>); <span style="color:#a6e22e">ce</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// 写入日志
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">fields</span><span style="color:#f92672">...</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) <span style="color:#a6e22e">check</span>(<span style="color:#a6e22e">lvl</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Level</span>, <span style="color:#a6e22e">msg</span> <span style="color:#66d9ef">string</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">CheckedEntry</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">const</span> <span style="color:#a6e22e">callerSkipOffset</span> = <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 级别对部署直接返回 nil，不打印日志
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">lvl</span> &lt; <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">DPanicLevel</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">core</span>.<span style="color:#a6e22e">Enabled</span>(<span style="color:#a6e22e">lvl</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 创建一条日志消息实体
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">ent</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">LoggerName</span>: <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">name</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Time</span>:       <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">clock</span>.<span style="color:#a6e22e">Now</span>(),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Level</span>:      <span style="color:#a6e22e">lvl</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Message</span>:    <span style="color:#a6e22e">msg</span>,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 调用底层的 Check 获取检查过的日志消息实体
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">ce</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">core</span>.<span style="color:#a6e22e">Check</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#66d9ef">nil</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">willWrite</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ce</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 根据当前级别判断是否需要 panic 和 fatal(os.Exit(1))
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">switch</span> <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Level</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">PanicLevel</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">ce</span> = <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Should</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">WriteThenPanic</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">FatalLevel</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">onFatal</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">onFatal</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// nil or WriteThenNoop will lead to continued execution after
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">// a Fatal log entry, which is unexpected. For example,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//   f, err := os.Open(..)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//   if err != nil {
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//     log.Fatal(&#34;cannot open&#34;, zap.Error(err))
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//   }
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//   fmt.Println(f.Name())
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">//
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">// The f.Name() will panic if we continue execution after the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">// log.Fatal.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">onFatal</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">||</span> <span style="color:#a6e22e">onFatal</span> <span style="color:#f92672">==</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">WriteThenNoop</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">onFatal</span> = <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">WriteThenFatal</span>
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">ce</span> = <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">After</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">onFatal</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">DPanicLevel</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">development</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">ce</span> = <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Should</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">WriteThenPanic</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 如果不需要写入则直接返回 CheckedEntry
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> !<span style="color:#a6e22e">willWrite</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ce</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 将 Logger 的 WriteSyncer 赋值给 CheckedEntry
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span> = <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">errorOutput</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 根据配置决定是否需要堆栈和调用者跟踪，不需要则直接返回 CheckedEntry
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">addStack</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">addStack</span>.<span style="color:#a6e22e">Enabled</span>(<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Level</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> !<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">addCaller</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#a6e22e">addStack</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ce</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 否则捕获相关信息，赋值给 CheckedEntry
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">stackDepth</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">stacktraceFirst</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">addStack</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">stackDepth</span> = <span style="color:#a6e22e">stacktraceFull</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">stack</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">captureStacktrace</span>(<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">callerSkip</span><span style="color:#f92672">+</span><span style="color:#a6e22e">callerSkipOffset</span>, <span style="color:#a6e22e">stackDepth</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">stack</span>.<span style="color:#a6e22e">Free</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">stack</span>.<span style="color:#a6e22e">Count</span>() <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">addCaller</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Fprintf</span>(<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">errorOutput</span>, <span style="color:#e6db74">&#34;%v Logger.check error: failed to get caller\n&#34;</span>, <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Time</span>.<span style="color:#a6e22e">UTC</span>())
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">errorOutput</span>.<span style="color:#a6e22e">Sync</span>()
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ce</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">frame</span>, <span style="color:#a6e22e">more</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">stack</span>.<span style="color:#a6e22e">Next</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">addCaller</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Caller</span> = <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">EntryCaller</span>{
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">Defined</span>:  <span style="color:#a6e22e">frame</span>.<span style="color:#a6e22e">PC</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">PC</span>:       <span style="color:#a6e22e">frame</span>.<span style="color:#a6e22e">PC</span>,
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">File</span>:     <span style="color:#a6e22e">frame</span>.<span style="color:#a6e22e">File</span>,
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">Line</span>:     <span style="color:#a6e22e">frame</span>.<span style="color:#a6e22e">Line</span>,
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">Function</span>: <span style="color:#a6e22e">frame</span>.<span style="color:#a6e22e">Function</span>,
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">addStack</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">buffer</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">bufferpool</span>.<span style="color:#a6e22e">Get</span>()
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">buffer</span>.<span style="color:#a6e22e">Free</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">stackfmt</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">newStackFormatter</span>(<span style="color:#a6e22e">buffer</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// We&#39;ve already extracted the first frame, so format that
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">// separately and defer to stackfmt for the rest.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#a6e22e">stackfmt</span>.<span style="color:#a6e22e">FormatFrame</span>(<span style="color:#a6e22e">frame</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">more</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">stackfmt</span>.<span style="color:#a6e22e">FormatStack</span>(<span style="color:#a6e22e">stack</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Stack</span> = <span style="color:#a6e22e">buffer</span>.<span style="color:#a6e22e">String</span>()
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 返回 CheckedEntry
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ce</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Write writes the entry to the stored Cores, returns any errors, and returns
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// the CheckedEntry reference to a pool for immediate re-use. Finally, it
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// executes any required CheckWriteAction.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">ce</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">CheckedEntry</span>) <span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">fields</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Field</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ce</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">dirty</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#75715e">// Make a best effort to detect unsafe re-use of this CheckedEntry.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#75715e">// If the entry is dirty, log an internal error; because the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#75715e">// CheckedEntry is being used after it was returned to the pool,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#75715e">// the message may be an amalgamation from multiple call sites.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Fprintf</span>(<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span>, <span style="color:#e6db74">&#34;%v Unsafe CheckedEntry re-use near Entry %+v.\n&#34;</span>, <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Time</span>, <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Entry</span>)
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span>.<span style="color:#a6e22e">Sync</span>()
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">dirty</span> = <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 遍历 CheckedEntry 中的所有 core，将 Entry 作为参数调用它们的 Write 方法
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">cores</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">multierr</span>.<span style="color:#a6e22e">Append</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">cores</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Entry</span>, <span style="color:#a6e22e">fields</span>))
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Fprintf</span>(<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span>, <span style="color:#e6db74">&#34;%v write error: %v\n&#34;</span>, <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Time</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">ErrorOutput</span>.<span style="color:#a6e22e">Sync</span>()
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 调用 hook
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">hook</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">after</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">hook</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">hook</span>.<span style="color:#a6e22e">OnWrite</span>(<span style="color:#a6e22e">ce</span>, <span style="color:#a6e22e">fields</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 将 CheckedEntry 存入 sync.Pool，以便下次从池中获取使用
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">putCheckedEntry</span>(<span style="color:#a6e22e">ce</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 默认的 zapcore.Core 实现的 Write 方法
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">c</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">ioCore</span>) <span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">ent</span> <span style="color:#a6e22e">Entry</span>, <span style="color:#a6e22e">fields</span> []<span style="color:#a6e22e">Field</span>) <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 根据实体和字段获取编码后的 buffer
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">buf</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">c</span>.<span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">EncodeEntry</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">fields</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 调用 WriteSyncer 的 Write 方法写入 Bytes
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">c</span>.<span style="color:#a6e22e">out</span>.<span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Bytes</span>())
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Free</span>()
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 若日志级别大于错误级别则直接同步写入操作
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Level</span> &gt; <span style="color:#a6e22e">ErrorLevel</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// Since we may be crashing the program, sync the output. Ignore Sync
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">// errors, pending a clean solution to issue #370.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#a6e22e">c</span>.<span style="color:#a6e22e">Sync</span>()
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>阅读以上两个关键方法，我们可以概括出日志记录器打印消息的主要流程：</p>
+<ol>
+<li>创建一个 Entry 结构体，这里面包含了一条日志最基本的信息。</li>
+<li>用上面的 entry 作为参数，调用 core 的 Check 方法检查该条日志是否需要打印，得到 CheckedEntry。</li>
+<li>根据日志级别决定是否需要 Panic 或 Fatal。</li>
+<li>若日志需要打印则将 Logger.errorOutput 赋值给 CheckedEntry。</li>
+<li>若 Logger.addStack 返回 true，并且开启了 Logger.addCaller 则捕获堆栈并赋值给 CheckedEntry。</li>
+<li>遍历 CheckedEntry.cores 属性中所有的 zapcore.Core，以 CheckedEntry.Entry 和 fields 为参数调用它的 Write 方法。</li>
+<li>调用 CheckedEntry.after 中的 Hook 方法，这里主要用来执行退出或者Panic操作，详见 <code>entry.go:CheckWriteAction</code> 类型以及方法。</li>
+<li>将 CheckedEntry 缓存到对象池中，以便下次直接获取。</li>
+</ol>
+<h3 id="zaplogger-的-field">zap.Logger 的 Field</h3>
+<p>我们知道，zap 是一个结构化的日志记录器。在一条日志中，可以插入 Field 携带一些额外信息。我们可以从源码查看 zap 是怎样设计 Field 的：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">FieldType</span> <span style="color:#66d9ef">uint8</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// UnknownType is the default field type. Attempting to add it to an encoder will panic.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">UnknownType</span> <span style="color:#a6e22e">FieldType</span> = <span style="color:#66d9ef">iota</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">ArrayMarshalerType</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">ObjectMarshalerType</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">BinaryType</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">BoolType</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Field</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Key</span>       <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Type</span>      <span style="color:#a6e22e">FieldType</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Integer</span>   <span style="color:#66d9ef">int64</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">String</span>    <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Interface</span> <span style="color:#66d9ef">interface</span>{}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">f</span> <span style="color:#a6e22e">Field</span>) <span style="color:#a6e22e">AddTo</span>(<span style="color:#a6e22e">enc</span> <span style="color:#a6e22e">ObjectEncoder</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">switch</span> <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Type</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">ArrayMarshalerType</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">AddArray</span>(<span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Key</span>, <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Interface</span>.(<span style="color:#a6e22e">ArrayMarshaler</span>))
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">ObjectMarshalerType</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">AddObject</span>(<span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Key</span>, <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Interface</span>.(<span style="color:#a6e22e">ObjectMarshaler</span>))
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>.
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">default</span>:
+</span></span><span style="display:flex;"><span>		panic(<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;unknown field type: %v&#34;</span>, <span style="color:#a6e22e">f</span>))
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">AddString</span>(<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;%sError&#34;</span>, <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Key</span>), <span style="color:#a6e22e">err</span>.<span style="color:#a6e22e">Error</span>())
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">addFields</span>(<span style="color:#a6e22e">enc</span> <span style="color:#a6e22e">ObjectEncoder</span>, <span style="color:#a6e22e">fields</span> []<span style="color:#a6e22e">Field</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">fields</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fields</span>[<span style="color:#a6e22e">i</span>].<span style="color:#a6e22e">AddTo</span>(<span style="color:#a6e22e">enc</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>在前面的编码器介绍章节中，我们已经了解到编码出一个日志实体(Entry)时，会调用 <code>EncodeEntry</code> 方法。这个方法中就是通过 <code>addFields</code> 调用来处理 Field 的。从上面可以看出，它调用了 AddTo 方法，AddTo 仅仅是根据字段的类型做不同的处理而已。</p>
+<h3 id="zaplogger-的-option-机制">zap.Logger 的 Option 机制</h3>
+<p>在 zap/options.go 中，我们能看到很多返回值类型为 Option 的函数，在创建 Logger 时，我们通过传入这些选项就能很轻易地在一定程度上更改日志记录器的行为。通过 Option 接口中的函数签名 <code>apply(*Logger)</code> 很容易得知 Option 的作用实际上就是更改 Logger 的某些属性，使之更容易地实现某些能力。下面我将分析常见的几种 Option 实现，学习它们是怎样工作的。</p>
+<h4 id="development-option">Development Option</h4>
+<p>我们可以从最简单的 Development Option 开始，它仅仅将 Logger 的 development 属性置为了 true：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Development</span>() <span style="color:#a6e22e">Option</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">optionFunc</span>(<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">development</span> = <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>	})
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这是一个包内变量，在一般情况下，我们只能通过 Development Option 的形式将它置为 true。它的作用也十分简单有限：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) <span style="color:#a6e22e">check</span>(<span style="color:#a6e22e">lvl</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Level</span>, <span style="color:#a6e22e">msg</span> <span style="color:#66d9ef">string</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">CheckedEntry</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">switch</span> <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Level</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">DPanicLevel</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">development</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">ce</span> = <span style="color:#a6e22e">ce</span>.<span style="color:#a6e22e">Should</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">WriteThenPanic</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>从上面可以看到，它提供的能力仅仅是在 check 时若日志级别是 <code>zapcore.DPanicLevel</code> 则在 checkentry 中添加一个 Panic 的 after hook。在 checkentry 调用 Write 后进行 Panic。</p>
+<h4 id="hook-option">Hook Option</h4>
+<p>在上文中有提到，一条日志消息在打印后会调用 Hook 函数进行一些后置操作。但这里的 Hook 与 <code>ce.after</code> 的 Hook 略有不同。这里的 Hook 是通过 <code>func Hooks(hooks ...func(zapcore.Entry) error) Option</code> 函数进行创建，以 Option 接口的形式存在的。我们可以从下面这个 Demo 开始：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestDevelopLogger</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">logger</span>, <span style="color:#a6e22e">_</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">NewDevelopment</span>(<span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">Hooks</span>(<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">entry</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>) <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;msg A:&#34;</span>, <span style="color:#a6e22e">entry</span>.<span style="color:#a6e22e">Message</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>	}), <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">Hooks</span>(<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">entry</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>) <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;msg B:&#34;</span>, <span style="color:#a6e22e">entry</span>.<span style="color:#a6e22e">Message</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>	}))
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">logger</span>.<span style="color:#a6e22e">Info</span>(<span style="color:#e6db74">&#34;hello world&#34;</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>通过断点可知，在 Logger 上注册 Hooks 经过了如下几个方法：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// 通过配置构建 Logger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">cfg</span> <span style="color:#a6e22e">Config</span>) <span style="color:#a6e22e">Build</span>(<span style="color:#a6e22e">opts</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 构建基本的 logger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">log</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">New</span>(
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewCore</span>(<span style="color:#a6e22e">enc</span>, <span style="color:#a6e22e">sink</span>, <span style="color:#a6e22e">cfg</span>.<span style="color:#a6e22e">Level</span>),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">cfg</span>.<span style="color:#a6e22e">buildOptions</span>(<span style="color:#a6e22e">errSink</span>)<span style="color:#f92672">...</span>,
+</span></span><span style="display:flex;"><span>	)
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 将 Option 应用到 logger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">opts</span>) &gt; <span style="color:#ae81ff">0</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">log</span> = <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">WithOptions</span>(<span style="color:#a6e22e">opts</span><span style="color:#f92672">...</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">log</span>, <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 克隆当前 logger，并且对它调用 Options 接口的 apply 函数
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) <span style="color:#a6e22e">WithOptions</span>(<span style="color:#a6e22e">opts</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">Option</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">c</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">clone</span>()
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">opt</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">opts</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">opt</span>.<span style="color:#a6e22e">apply</span>(<span style="color:#a6e22e">c</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">c</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 这里的 f 函数实际上就是下面 Hooks 返回的 optionFunc 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">f</span> <span style="color:#a6e22e">optionFunc</span>) <span style="color:#a6e22e">apply</span>(<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">f</span>(<span style="color:#a6e22e">log</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Hooks</span>(<span style="color:#a6e22e">hooks</span> <span style="color:#f92672">...</span><span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>) <span style="color:#66d9ef">error</span>) <span style="color:#a6e22e">Option</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">optionFunc</span>(<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">log</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Logger</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">core</span> = <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">RegisterHooks</span>(<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">core</span>, <span style="color:#a6e22e">hooks</span><span style="color:#f92672">...</span>)
+</span></span><span style="display:flex;"><span>	})
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// hook 注册逻辑，返回一个包含原 core 和 hook 函数的 hooked
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">hooked</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Core</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">funcs</span> []<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">Entry</span>) <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">RegisterHooks</span>(<span style="color:#a6e22e">core</span> <span style="color:#a6e22e">Core</span>, <span style="color:#a6e22e">hooks</span> <span style="color:#f92672">...</span><span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">Entry</span>) <span style="color:#66d9ef">error</span>) <span style="color:#a6e22e">Core</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">funcs</span> <span style="color:#f92672">:=</span> append([]<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">Entry</span>) <span style="color:#66d9ef">error</span>{}, <span style="color:#a6e22e">hooks</span><span style="color:#f92672">...</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">hooked</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Core</span>:  <span style="color:#a6e22e">core</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">funcs</span>: <span style="color:#a6e22e">funcs</span>,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>从以上几个方法中，我们知道了每次注册一个 Hook Option 实际上就是克隆当前 Logger，并且将它的 Core 包装为 hooked。上面的示例应用了两个 Hook Option，这样一来 Logger 实际上大概长这样：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#a6e22e">Logger</span>:{
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 后包装的在外面
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">core</span>: <span style="color:#a6e22e">hooked</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// 先包装的在里面
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#a6e22e">core</span>: <span style="color:#a6e22e">hooked</span>:{
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">core</span>: <span style="color:#a6e22e">iocore</span>{<span style="color:#f92672">...</span>}
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">funcs</span>: []<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">entry</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>){ print(<span style="color:#e6db74">&#34;msg A&#34;</span>) }
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">funcs</span>: []<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">entry</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">Entry</span>){ print(<span style="color:#e6db74">&#34;msg B&#34;</span>) }
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>是不是和 context 的包装设计有异曲同工之妙？那么这个日志记录器以及 Hook 函数是怎样工作的呢？我们可以继续看这个 Logger 的 Check 方法 和 Write 方法：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// zapcore/hook.go
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 调用内部的 Core.Check，若通过则将这个 Core 添加到 *CheckedEntry 中
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">h</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">hooked</span>) <span style="color:#a6e22e">Check</span>(<span style="color:#a6e22e">ent</span> <span style="color:#a6e22e">Entry</span>, <span style="color:#a6e22e">ce</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">CheckedEntry</span>) <span style="color:#f92672">*</span><span style="color:#a6e22e">CheckedEntry</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Let the wrapped Core decide whether to log this message or not. This
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// also gives the downstream a chance to register itself directly with the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// CheckedEntry.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">downstream</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">Core</span>.<span style="color:#a6e22e">Check</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">ce</span>); <span style="color:#a6e22e">downstream</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">downstream</span>.<span style="color:#a6e22e">AddCore</span>(<span style="color:#a6e22e">ent</span>, <span style="color:#a6e22e">h</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ce</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 直接遍历 funcs 进行调用，将错误拼接起来进行返回
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">h</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">hooked</span>) <span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">ent</span> <span style="color:#a6e22e">Entry</span>, <span style="color:#a6e22e">_</span> []<span style="color:#a6e22e">Field</span>) <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Since our downstream had a chance to register itself directly with the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// CheckedMessage, we don&#39;t need to call it here.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">funcs</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">multierr</span>.<span style="color:#a6e22e">Append</span>(<span style="color:#a6e22e">err</span>, <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">funcs</span>[<span style="color:#a6e22e">i</span>](<span style="color:#a6e22e">ent</span>))
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">err</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>在之前我们已经了解到了打印一条日志会先调用检查，检查通过则会将 Core 添加到 *CheckedEntry 中，然后写入时日志消息实体会调用 Core 的 Write 方法进行写入。从上面我们可以得知调用 hooked 的 Check 方法时，它会调用下游的 Core 进行 Check，若检查不为空，则将自己作为 Core 添加到 *CheckedEntry 中。</p>
+<p>也就是说上面那个 Demo 打印日志时，会有三个 Core，第一个 Core 是打印日志记录的 iocore，后面两个 Core 分别是打印 msg A 的 hooked core 和 打印 msg B 的 hooked core。</p>
+<h3 id="zaplogger-的扩展机制">zap.Logger 的扩展机制</h3>
+<p>我们知道 zap 的核心接口是 <code>zapcore.Core</code>，并且它的默认实现 <code>zapcore.ioCore</code> 内部有三个接口，这些都是可扩展的点。下面我将从常用的几个扩展点开始进行介绍。</p>
+<h4 id="encoder">Encoder</h4>
+<p>Encoder 即编码器，是一种用于将日志记录编码为特定格式的工具。zapcore 包中自带三种编码器：</p>
+<ul>
+<li>jsonEncoder：zap 中最核心的编码器，为了高性能没有使用反射，借助强类型的 Field 进行编码。</li>
+<li>consoleEncoder：基于 jsonEncoder 进行了一层封装，更改了日志的打印格式。</li>
+<li>memoryEncoder：用于测试的编码器，没有实现 <code>Clone</code> 和 <code>EncodeEntry</code> 方法，不能直接使用。</li>
+</ul>
+<p>首先，我们先看看 Encoder 的定义：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Encoder</span> <span style="color:#66d9ef">interface</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">ObjectEncoder</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Clone copies the encoder, ensuring that adding fields to the copy doesn&#39;t
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// affect the original.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">Clone</span>() <span style="color:#a6e22e">Encoder</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// EncodeEntry encodes an entry and fields, along with any accumulated
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// context, into a byte buffer and returns it. Any fields that are empty,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// including fields on the `Entry` type, should be omitted.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">EncodeEntry</span>(<span style="color:#a6e22e">Entry</span>, []<span style="color:#a6e22e">Field</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">buffer</span>.<span style="color:#a6e22e">Buffer</span>, <span style="color:#66d9ef">error</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ObjectEncoder</span> <span style="color:#66d9ef">interface</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Logging-specific marshalers.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">AddArray</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">marshaler</span> <span style="color:#a6e22e">ArrayMarshaler</span>) <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddObject</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">marshaler</span> <span style="color:#a6e22e">ObjectMarshaler</span>) <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// Built-in types.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">AddBinary</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> []<span style="color:#66d9ef">byte</span>)     <span style="color:#75715e">// for arbitrary bytes
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">AddByteString</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> []<span style="color:#66d9ef">byte</span>) <span style="color:#75715e">// for UTF-8 encoded bytes
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">AddBool</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">bool</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddComplex128</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">complex128</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddComplex64</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">complex64</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddDuration</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Duration</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddFloat64</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">float64</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddFloat32</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">float32</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddInt</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">int</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddInt64</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">int64</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddInt32</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">int32</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddInt16</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">int16</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddInt8</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">int8</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddString</span>(<span style="color:#a6e22e">key</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">string</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddTime</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Time</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddUint</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">uint</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddUint64</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">uint64</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddUint32</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">uint32</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddUint16</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">uint16</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddUint8</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">uint8</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">AddUintptr</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">uintptr</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// AddReflected uses reflection to serialize arbitrary objects, so it can be
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// slow and allocation-heavy.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">AddReflected</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// OpenNamespace opens an isolated namespace where all subsequent fields will
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// be added. Applications can use namespaces to prevent key collisions when
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// injecting loggers into sub-components or third-party libraries.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">OpenNamespace</span>(<span style="color:#a6e22e">key</span> <span style="color:#66d9ef">string</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>从上面我们能了解一个 Encoder 提供了哪些接口，能看到其中最核心的就是 <code>EncodeEntry(Entry, []Field) (*buffer.Buffer, error)</code>，它在 ioCore 的 Write 方法中的第一行就会被调用。在看代码之前，我们可以先写一个示例，直观的感受一下这两种编码器的异同：</p>
+<!-- TODO -->
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestEncoderLogger</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">json_logger</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewCore</span>(
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewJSONEncoder</span>(<span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">NewDevelopmentEncoderConfig</span>()),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">AddSync</span>(<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stdout</span>),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">DebugLevel</span>,
+</span></span><span style="display:flex;"><span>	))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">console_logger</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewCore</span>(
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// 编码器配置
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewConsoleEncoder</span>(<span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">NewDevelopmentEncoderConfig</span>()),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">AddSync</span>(<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stdout</span>),
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">DebugLevel</span>,
+</span></span><span style="display:flex;"><span>	))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">json_logger</span>.<span style="color:#a6e22e">Info</span>(<span style="color:#e6db74">&#34;not have field&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">json_logger</span>.<span style="color:#a6e22e">Info</span>(<span style="color:#e6db74">&#34;have many filed&#34;</span>, <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;key1&#34;</span>, <span style="color:#e6db74">&#34;val1&#34;</span>), <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#e6db74">&#34;key2&#34;</span>, <span style="color:#ae81ff">2</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">console_logger</span>.<span style="color:#a6e22e">Info</span>(<span style="color:#e6db74">&#34;not have field&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">console_logger</span>.<span style="color:#a6e22e">Info</span>(<span style="color:#e6db74">&#34;have many filed&#34;</span>, <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;key1&#34;</span>, <span style="color:#e6db74">&#34;val1&#34;</span>), <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#e6db74">&#34;key2&#34;</span>, <span style="color:#ae81ff">2</span>))
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// --- output 
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// {&#34;L&#34;:&#34;INFO&#34;,&#34;T&#34;:&#34;2022-06-27T01:08:10.119+0800&#34;,&#34;M&#34;:&#34;not have field&#34;}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// {&#34;L&#34;:&#34;INFO&#34;,&#34;T&#34;:&#34;2022-06-27T01:08:10.119+0800&#34;,&#34;M&#34;:&#34;have many filed&#34;,&#34;key1&#34;:&#34;val1&#34;,&#34;key2&#34;:2}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// 2022-06-27T01:08:10.119+0800	INFO	not have field
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// 2022-06-27T01:08:10.119+0800	INFO	have many filed	{&#34;key1&#34;: &#34;val1&#34;, &#34;key2&#34;: 2}
+</span></span></span></code></pre></div><p>接下来，我们可以从 JsonEncoder 的 EncodeEntry 方法开始：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">enc</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">jsonEncoder</span>) <span style="color:#a6e22e">EncodeEntry</span>(<span style="color:#a6e22e">ent</span> <span style="color:#a6e22e">Entry</span>, <span style="color:#a6e22e">fields</span> []<span style="color:#a6e22e">Field</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">buffer</span>.<span style="color:#a6e22e">Buffer</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">final</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">clone</span>()
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">AppendByte</span>(<span style="color:#e6db74">&#39;{&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">LevelKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">EncodeLevel</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">addKey</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">LevelKey</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">cur</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>()
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">EncodeLevel</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Level</span>, <span style="color:#a6e22e">final</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">cur</span> <span style="color:#f92672">==</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>() {
+</span></span><span style="display:flex;"><span>			<span style="color:#75715e">// User-supplied EncodeLevel was a no-op. Fall back to strings to keep
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#75715e">// output JSON valid.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AppendString</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Level</span>.<span style="color:#a6e22e">String</span>())
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">TimeKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AddTime</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">TimeKey</span>, <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Time</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">LoggerName</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">NameKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">addKey</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">NameKey</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">cur</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>()
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">nameEncoder</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">EncodeName</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// if no name encoder provided, fall back to FullNameEncoder for backwards
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#75715e">// compatibility
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">nameEncoder</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">nameEncoder</span> = <span style="color:#a6e22e">FullNameEncoder</span>
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">nameEncoder</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">LoggerName</span>, <span style="color:#a6e22e">final</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">cur</span> <span style="color:#f92672">==</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>() {
+</span></span><span style="display:flex;"><span>			<span style="color:#75715e">// User-supplied EncodeName was a no-op. Fall back to strings to
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#75715e">// keep output JSON valid.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>			<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AppendString</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">LoggerName</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Caller</span>.<span style="color:#a6e22e">Defined</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">CallerKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">addKey</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">CallerKey</span>)
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">cur</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>()
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">EncodeCaller</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Caller</span>, <span style="color:#a6e22e">final</span>)
+</span></span><span style="display:flex;"><span>			<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">cur</span> <span style="color:#f92672">==</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>() {
+</span></span><span style="display:flex;"><span>				<span style="color:#75715e">// User-supplied EncodeCaller was a no-op. Fall back to strings to
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>				<span style="color:#75715e">// keep output JSON valid.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>				<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AppendString</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Caller</span>.<span style="color:#a6e22e">String</span>())
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">FunctionKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">addKey</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">FunctionKey</span>)
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AppendString</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Caller</span>.<span style="color:#a6e22e">Function</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">MessageKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">addKey</span>(<span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">MessageKey</span>)
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AppendString</span>(<span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Message</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Len</span>() &gt; <span style="color:#ae81ff">0</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">addElementSeparator</span>()
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Write</span>(<span style="color:#a6e22e">enc</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">Bytes</span>())
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">addFields</span>(<span style="color:#a6e22e">final</span>, <span style="color:#a6e22e">fields</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">closeOpenNamespaces</span>()
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Stack</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">StacktraceKey</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">AddString</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">StacktraceKey</span>, <span style="color:#a6e22e">ent</span>.<span style="color:#a6e22e">Stack</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">AppendByte</span>(<span style="color:#e6db74">&#39;}&#39;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>.<span style="color:#a6e22e">AppendString</span>(<span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">LineEnding</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">ret</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">final</span>.<span style="color:#a6e22e">buf</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">putJSONEncoder</span>(<span style="color:#a6e22e">final</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ret</span>, <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>上面的代码看似很长，实际上的逻辑却很简单：</p>
+<ol>
+<li>首先调用 <code>enc.clone()</code> 方法，从对象池中获取零值对象 <code>final</code>，再将当前编码器的数据赋值给它；</li>
+<li>根据 EncoderConfig 日志内容往 <code>final.buf</code> 中写值；</li>
+<li>从 <code>final</code> 中获取 <code>buf</code> 作为返回值 <code>ret</code>；</li>
+<li>通过 <code>putJSONEncoder()</code> 方法将 <code>final</code> 对象重置并还给对象池；</li>
+<li>返回 ret。</li>
+</ol>
+<p>这里唯一需要注意的就是，为了高性能，减少对象的内存分配，使用了对象池化的技术。从上面可以看到，为了实现 jsonEncoder 的复用，它采用了如下操作：</p>
+<ul>
+<li>jsonEncoder 本身只存编码器的公共数据，打印日志时的临时字段采用 clone 的 jsonEncoder 进行操作。</li>
+<li>clone 编码器的过程实际上只是从对象池获取已分配好的实例，再进行值的复制而已，使用完后会通过 <code>putJSONEncoder()</code> 清空属性还给对象池；</li>
+<li>clone 过程中，其中的 buffer 属性也是从对象池中获取的，在获取时它会通过 <code>Reset()</code> 进行内容的重置。</li>
+</ul>
+<h4 id="writesyncer">WriteSyncer</h4>
+<p>WriteSyncer 的定义更加简单，它实际上就是包装 <code>io.Writer</code> 之后新增了一个 <code>Sync()</code> 方法而已。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">WriteSyncer</span> <span style="color:#66d9ef">interface</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">Writer</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Sync</span>() <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// AddSync converts an io.Writer to a WriteSyncer. It attempts to be
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// intelligent: if the concrete type of the io.Writer implements WriteSyncer,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// we&#39;ll use the existing Sync method. If it doesn&#39;t, we&#39;ll add a no-op Sync.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">AddSync</span>(<span style="color:#a6e22e">w</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">Writer</span>) <span style="color:#a6e22e">WriteSyncer</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">switch</span> <span style="color:#a6e22e">w</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">w</span>.(<span style="color:#66d9ef">type</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">case</span> <span style="color:#a6e22e">WriteSyncer</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">w</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">default</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">writerWrapper</span>{<span style="color:#a6e22e">w</span>}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">writerWrapper</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">Writer</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">w</span> <span style="color:#a6e22e">writerWrapper</span>) <span style="color:#a6e22e">Sync</span>() <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">NewMultiWriteSyncer</span>(<span style="color:#a6e22e">ws</span> <span style="color:#f92672">...</span><span style="color:#a6e22e">WriteSyncer</span>) <span style="color:#a6e22e">WriteSyncer</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">ws</span>) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">ws</span>[<span style="color:#ae81ff">0</span>]
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">multiWriteSyncer</span>(<span style="color:#a6e22e">ws</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>所以只要实现了 io.Writer 接口，都能通过 AddSync 方法将其转换为 WriteSyncer。除此之外，我们还可以使用 <code>NewMultiWriteSyncer</code> 实现让日志有多个输出。</p>
+<h4 id="相关扩展库">相关扩展库</h4>
+<ul>
+<li><a href="https://github.com/tchap/zapext">tchap/zapext</a></li>
+</ul>
+<!-- ## 怎么使用 zap？
+### 看看别人是怎样用的
+
+### 基于 zap 封装自己的日志库
+#### 使用公共字段
+#### 搭配第三方库实现日志切割
+####  -->
+<h2 id="常见问题">常见问题</h2>
+<h3 id="什么时候使用-dpanic-">什么时候使用 DPanic ?</h3>
+<p>DPanic 的意思是 &ldquo;development panic&rdquo;。在开发模式下，它在打印 <code>DPanicLevel</code> 级别日志后会触发 Panic。在生产模式下则不会触发 Panic。DPanic 一般用在可能发生但实际上不应该发生错误的地方。如果你在开发时经常写类似这样的代码，就可以使用 Dpanic:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>  panic(<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;err: %v&#34;</span>, <span style="color:#a6e22e">err</span>))
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="怎么实现日志切割-">怎么实现日志切割 ？</h3>
+<p>zap 没有提供日志切割的支持，但是我们可以通过 lumberjack 简单封装 WriteSyncer 来支持日志切割的需求。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#f92672">import</span> <span style="color:#e6db74">&#34;github.com/natefinch/lumberjack/v3&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">getLogger</span>(){
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// ......
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">// 获取滚动写入器
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">writer</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">lumberjack</span>.<span style="color:#a6e22e">NewRoller</span>(<span style="color:#a6e22e">filename</span>, <span style="color:#a6e22e">maxsize</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">lumberjack</span>.<span style="color:#a6e22e">Options</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">MaxBackups</span>: <span style="color:#a6e22e">maxbackups</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">MaxAge</span>:     <span style="color:#a6e22e">maxage</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Compress</span>:   <span style="color:#a6e22e">compress</span>,
+</span></span><span style="display:flex;"><span>	})
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 获取 zapCore
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">core</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewCore</span>(
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">NewJSONEncoder</span>(<span style="color:#a6e22e">encoderConfig</span>),
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">zapcore</span>.<span style="color:#a6e22e">AddSync</span>(<span style="color:#a6e22e">writer</span>),
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">level</span>,
+</span></span><span style="display:flex;"><span>		)
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// 获取 Logger
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#a6e22e">logger</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">core</span>, <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">AddCaller</span>(), <span style="color:#a6e22e">zap</span>.<span style="color:#a6e22e">AddCallerSkip</span>(<span style="color:#ae81ff">1</span>))
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">logger</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><!-- ## 学习点
+### Option 设计模式
+
+### 高性能优化技巧
+- 对象池
+- 避免反射
+
+### 
+-->
+        </div>
+
+        
+        
+        <div class="article-toc" style="display:none;">
+            <h3>Contents</h3>
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是-zap-">什么是 Zap ?</a>
+      <ul>
+        <li><a href="#从-logger-的创建开始">从 Logger 的创建开始</a></li>
+        <li><a href="#zaplogger-是怎样打印一条日志的">zap.Logger 是怎样打印一条日志的</a></li>
+        <li><a href="#zaplogger-的-field">zap.Logger 的 Field</a></li>
+        <li><a href="#zaplogger-的-option-机制">zap.Logger 的 Option 机制</a></li>
+        <li><a href="#zaplogger-的扩展机制">zap.Logger 的扩展机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#常见问题">常见问题</a>
+      <ul>
+        <li><a href="#什么时候使用-dpanic-">什么时候使用 DPanic ?</a></li>
+        <li><a href="#怎么实现日志切割-">怎么实现日志切割 ？</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+        </div>
+        
+        
+
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+        <script>
+            (function() {
+                var $toc = $('#TableOfContents');
+                if ($toc.length > 0) {
+                    var $window = $(window);
+
+                    function onScroll(){
+                        var currentScroll = $window.scrollTop();
+                        var h = $('.article-entry h1, .article-entry h2, .article-entry h3, .article-entry h4, .article-entry h5, .article-entry h6');
+                        var id = "";
+                        h.each(function (i, e) {
+                            e = $(e);
+                            if (e.offset().top - 10 <= currentScroll) {
+                                id = e.attr('id');
+                            }
+                        });
+                        var active = $toc.find('a.active');
+                        if (active.length == 1 && active.eq(0).attr('href') == '#' + id) return true;
+
+                        active.each(function (i, e) {
+                            $(e).removeClass('active').siblings('ul').hide();
+                        });
+                        $toc.find('a[href="#' + id + '"]').parentsUntil('#TableOfContents').each(function (i, e) {
+                            $(e).children('a').addClass('active').siblings('ul').show();
+                        });
+                    }
+
+                    $window.on('scroll', onScroll);
+                    $(document).ready(function() {
+                        $toc.find('a').parent('li').find('ul').hide();
+                        onScroll();
+                        document.getElementsByClassName('article-toc')[0].style.display = '';
+                    });
+                }
+            })();
+        </script>
+        
+
+
+        
+        <footer class="article-footer">
+            <ul class="article-tag-list">
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/logging">logging
+                    </a>
+                </li>
+                
+                <li class="article-tag-list-item">
+                    <a class="article-tag-list-link" href="https://souloss.github.io/tags/golang">golang
+                    </a>
+                </li>
+                
+            </ul>
+        </footer>
+        
+    </div>
+    
+
+</article>
+<script src="https://giscus.app/client.js"
+            data-repo="souloss/souloss.github.io"
+            data-repo-id="R_kgDOH127aA"
+            data-category="Announcements"
+            data-category-id="DIC_kwDOH127aM4CQ5q7"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="1"
+            data-input-position="bottom"
+            data-lang="en"
+            data-loading="lazy"
+            data-theme="https://giscus.app/themes/custom_example.css"
+            crossorigin="anonymous"
+            async>
+    </script>
+        
+    </section>
+    <footer id="footer">
+    <div class="outer">
+        <div id="footer-info" class="inner">
+            &copy; 2022 souloss
+            <br />
+            Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with theme <a href="https://github.com/carsonip/hugo-theme-minos" target="_blank">Minos</a>
+        </div>
+    </div>
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/base16/tomorrow-night.min.css" integrity="sha512-RhpnNVOxLt8etr+FHZxS6rugyqr7XelU5OV9wt+Bem7Ua6HRGZOKP/bcuOqOhzEO9b7VrdjLxEz3Yc9FY6xR9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js" integrity="sha512-yUUc0qWm2rhM7X0EFe82LNnv2moqArj5nro/w1bi05A09hRVeIZbN6jlMoyu0+4I/Bu4Ck/85JQIU82T82M28w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    
+
+    
+
+    <script>
+        document.getElementById('main-nav-toggle').addEventListener('click', function () {
+            var header = document.getElementById('header');
+            if (header.classList.contains('mobile-on')) {
+                header.classList.remove('mobile-on');
+            } else {
+                header.classList.add('mobile-on');
+            }
+        });
+    </script>
+</footer>
+
+</div>
+</body>
+</html>

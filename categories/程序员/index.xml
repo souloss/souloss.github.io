@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>程序员 on souloss</title>
+    <link>https://souloss.github.io/categories/%E7%A8%8B%E5%BA%8F%E5%91%98/</link>
+    <description>Recent content in 程序员 on souloss</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+</copyright>
+    <lastBuildDate>Tue, 09 Nov 2021 01:03:37 +0800</lastBuildDate><atom:link href="https://souloss.github.io/categories/%E7%A8%8B%E5%BA%8F%E5%91%98/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>我的技术博客之路</title>
+      <link>https://souloss.github.io/posts/idea/talking-about-writing/</link>
+      <pubDate>Tue, 09 Nov 2021 01:03:37 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/idea/talking-about-writing/</guid>
+      <description>简单介绍我的写作经历与经验</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>GFM on souloss</title>
+    <link>https://souloss.github.io/tags/gfm/</link>
+    <description>Recent content in GFM on souloss</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <copyright>This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+</copyright>
+    <lastBuildDate>Tue, 18 May 2021 02:04:59 +0800</lastBuildDate><atom:link href="https://souloss.github.io/tags/gfm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>markdown 语法支持测试 - 第一版</title>
+      <link>https://souloss.github.io/posts/language/markdown-syntax-standard/</link>
+      <pubDate>Tue, 18 May 2021 02:04:59 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/language/markdown-syntax-standard/</guid>
+      <description>&lt;p&gt;本文主要内容是测试Hugo对Markdown的支持情况，方便后续写作时查阅。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>markdown 语法支持测试 - 第二版</title>
+      <link>https://souloss.github.io/posts/language/markdown-syntax/</link>
+      <pubDate>Tue, 18 May 2021 02:04:59 +0800</pubDate>
+      
+      <guid>https://souloss.github.io/posts/language/markdown-syntax/</guid>
+      <description>测试摘要</description>
+    </item>
+    
+  </channel>
+</rss>
